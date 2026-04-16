@@ -63,3 +63,51 @@ export interface GameEvent {
   data: unknown;
   timestamp: number;
 }
+
+export type Board = (string | null)[][];
+
+export interface PlayerSymbolInfo {
+  username: string;
+  symbol: "X" | "O";
+}
+
+export interface GameSessionData {
+  id: number;
+  board: Board;
+  currentPlayerOrder: number;
+  currentTurn: number;
+  gameStatus: "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "FINISHED" | "CANCELLED";
+  winnerUsername: string | null;
+  players: PlayerSymbolInfo[];
+}
+
+export interface GameStartedEvent {
+  event: "game_started";
+  gameSession: GameSessionData;
+  board: Board;
+  currentPlayerOrder: number;
+}
+
+export interface MoveEvent {
+  event: "move";
+  board: Board;
+  currentPlayerOrder: number;
+  gameStatus: string;
+  currentTurn: number;
+}
+
+export interface GameEndedEvent {
+  event: "game_ended";
+  board: Board;
+  gameStatus: string;
+  winnerUsername: string | null;
+  isDraw: boolean;
+  gameSession: GameSessionData;
+}
+
+export interface ReturnToLobbyEvent {
+  event: "return_to_lobby";
+  room: GameRoom;
+}
+
+export type GameWsEvent = GameStartedEvent | MoveEvent | GameEndedEvent | ReturnToLobbyEvent;

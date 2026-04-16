@@ -2,8 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { GameRoom, Player, ChatMessage } from "@/types/game";
+import {
+  GameRoom,
+  ChatMessage,
+  Board,
+  PlayerSymbolInfo,
+  GameWsEvent,
+} from "@/types/game";
 import { webSocketService } from "@/services/websocket";
+import TicTacToeBoard from "./components/TicTacToeBoard";
 
 export default function RoomPage() {
   const params = useParams();
@@ -14,12 +21,21 @@ export default function RoomPage() {
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState("");
   const [password, setPassword] = useState("");
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
 
-  // WebSocket subscriptions cleanup functions
+  const [board, setBoard] = useState<Board>([
+    [null, null, null],
+    [null, null, null],
+    [null, null, null],
+  ]);
+  const [currentPlayerOrder, setCurrentPlayerOrder] = useState(0);
+  const [gameStatus, setGameStatus] = useState("");
+  const [winnerUsername, setWinnerUsername] = useState<string | null>(null);
+  const [isDraw, setIsDraw] = useState(false);
+  const [gamePlayers, setGamePlayers] = useState<PlayerSymbolInfo[]>([]);
+
   const [unsubscribeFunctions, setUnsubscribeFunctions] = useState<
     (() => void)[]
   >([]);
@@ -32,13 +48,10 @@ export default function RoomPage() {
       }
 
       try {
-        // Connect to WebSocket if not already connected
         if (!webSocketService.isConnected()) {
           await webSocketService.connect(username);
         }
-        setIsConnected(true);
 
-        // Fetch room details first
         const response = await fetch(
           `http://localhost:8080/api/rooms/code/${roomCode}`,
         );
@@ -54,25 +67,22 @@ export default function RoomPage() {
         const roomData: GameRoom = await response.json();
         setRoom(roomData);
 
-        // Check if room is private and password is needed
         if (roomData.isPrivate && !roomPassword) {
           setShowPasswordPrompt(true);
           return;
         }
 
-        // Set up WebSocket subscriptions
         const unsubscribes: (() => void)[] = [];
 
-        // Subscribe to room updates
         const unsubscribeRoomPlayers = webSocketService.subscribeToRoomPlayers(
           roomData.id,
           (updatedRoom) => {
+            console.log('[DEBUG] subscribeToRoomPlayers update', { status: updatedRoom.status, playerCount: updatedRoom.players?.length });
             setRoom(updatedRoom);
           },
         );
         unsubscribes.push(unsubscribeRoomPlayers);
 
-        // Subscribe to chat messages
         const unsubscribeChat = webSocketService.subscribeToRoomChat(
           roomData.id,
           (message) => {
@@ -81,16 +91,31 @@ export default function RoomPage() {
         );
         unsubscribes.push(unsubscribeChat);
 
-        // Subscribe to ready status updates
         const unsubscribeReady = webSocketService.subscribeToReadyStatus(
           roomData.id,
           (data) => {
-            console.log("Ready status update:", data);
+            setRoom((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    players: prev.players.map((p) =>
+                      p.username === data.username
+                        ? { ...p, isReady: data.ready }
+                        : p,
+                    ),
+                  }
+                : prev,
+            );
           },
         );
         unsubscribes.push(unsubscribeReady);
 
-        // Subscribe to join response
+        const unsubscribeGameEvents =
+          webSocketService.subscribeToGameEvents(roomData.id, (event) => {
+            handleGameEvent(event);
+          });
+        unsubscribes.push(unsubscribeGameEvents);
+
         const unsubscribeJoinResponse =
           webSocketService.subscribeToUserJoinResponse(
             username,
@@ -107,7 +132,6 @@ export default function RoomPage() {
 
         setUnsubscribeFunctions(unsubscribes);
 
-        // Join the room
         webSocketService.joinRoom(
           roomData.id,
           roomCode,
@@ -122,11 +146,53 @@ export default function RoomPage() {
     [roomCode, username],
   );
 
+  const handleGameEvent = useCallback((event: GameWsEvent) => {
+    console.log('[DEBUG] handleGameEvent', event.event, event);
+    switch (event.event) {
+      case "game_started":
+        setBoard(event.board);
+        setCurrentPlayerOrder(event.currentPlayerOrder);
+        setGameStatus("IN_PROGRESS");
+        setWinnerUsername(null);
+        setIsDraw(false);
+        setGamePlayers(event.gameSession.players);
+        setRoom((prev) => prev ? { ...prev, status: "IN_PROGRESS" } : prev);
+        break;
+      case "move":
+        setBoard(event.board);
+        setCurrentPlayerOrder(event.currentPlayerOrder);
+        setGameStatus(event.gameStatus);
+        break;
+      case "game_ended":
+        setBoard(event.board);
+        setGameStatus(event.gameStatus);
+        setWinnerUsername(event.winnerUsername);
+        setIsDraw(event.isDraw);
+        setGamePlayers(event.gameSession.players);
+        setRoom((prev) => prev ? { ...prev, status: "FINISHED" } : prev);
+        break;
+      case "return_to_lobby":
+        setRoom(event.room);
+        setBoard([
+          [null, null, null],
+          [null, null, null],
+          [null, null, null],
+        ]);
+        setCurrentPlayerOrder(0);
+        setGameStatus("");
+        setWinnerUsername(null);
+        setIsDraw(false);
+        setGamePlayers([]);
+        break;
+    }
+  }, []);
+
   useEffect(() => {
+    console.log('[DEBUG] useEffect running connectAndJoinRoom');
     connectAndJoinRoom();
 
-    // Cleanup function
     return () => {
+      console.log('[DEBUG] useEffect cleanup - unsubscribing and leaving');
       unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
       if (room) {
         webSocketService.leaveRoom(room.id, username);
@@ -161,6 +227,18 @@ export default function RoomPage() {
       webSocketService.leaveRoom(room.id, username);
     }
     window.location.href = "/";
+  };
+
+  const handleCellClick = (row: number, col: number) => {
+    console.log('[DEBUG] handleCellClick called', { row, col, roomId: room?.id, username, connected: webSocketService.isConnected() });
+    if (!room) return;
+    webSocketService.makeMove(room.id, username, row, col);
+    console.log('[DEBUG] makeMove sent');
+  };
+
+  const handleReturnToLobby = () => {
+    if (!room) return;
+    webSocketService.returnToLobby(room.id, username);
   };
 
   const handlePasswordSubmit = () => {
@@ -239,6 +317,8 @@ export default function RoomPage() {
   const isHost = room.hostUsername === username;
   const allPlayersReady =
     room.players.length >= 2 && room.players.every((p) => p.isReady);
+  const isGameActive =
+    gameStatus === "IN_PROGRESS" || gameStatus === "FINISHED";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -268,7 +348,6 @@ export default function RoomPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Game Area */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
@@ -329,6 +408,35 @@ export default function RoomPage() {
                     )}
                   </div>
                 </div>
+              ) : isGameActive ? (
+                <div>
+                  <TicTacToeBoard
+                    board={board}
+                    currentPlayerOrder={currentPlayerOrder}
+                    players={gamePlayers}
+                    username={username}
+                    gameStatus={gameStatus}
+                    winnerUsername={winnerUsername}
+                    isDraw={isDraw}
+                    onCellClick={handleCellClick}
+                  />
+
+                  {gameStatus === "FINISHED" && isHost && (
+                    <div className="text-center mt-4">
+                      <button
+                        onClick={handleReturnToLobby}
+                        className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-medium"
+                      >
+                        Back to Lobby
+                      </button>
+                    </div>
+                  )}
+                  {gameStatus === "FINISHED" && !isHost && (
+                    <div className="text-center mt-4 text-gray-500 text-sm">
+                      Waiting for host to return to lobby...
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="text-center py-12">
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -342,9 +450,7 @@ export default function RoomPage() {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Players */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-medium mb-4">
                 Players ({room.players.length}/{room.maxPlayers})
@@ -369,6 +475,13 @@ export default function RoomPage() {
                           Host
                         </span>
                       )}
+                      {isGameActive && (
+                        <span
+                          className={`text-xs font-bold ${player.playerOrder === 0 ? "text-blue-600" : "text-red-600"}`}
+                        >
+                          {player.playerOrder === 0 ? "X" : "O"}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2">
                       {player.isReady && (
@@ -380,7 +493,6 @@ export default function RoomPage() {
               </div>
             </div>
 
-            {/* Chat */}
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-medium mb-4">Chat</h3>
               <div className="space-y-4">
