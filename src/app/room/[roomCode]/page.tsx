@@ -337,7 +337,12 @@ export default function RoomPage() {
               </span>
               <button
                 onClick={handleLeaveRoom}
-                className="text-sm text-red-600 hover:text-red-800"
+                disabled={isGameActive}
+                className={`text-sm ${
+                  isGameActive
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-red-600 hover:text-red-800"
+                }`}
               >
                 Leave Room
               </button>
@@ -361,7 +366,13 @@ export default function RoomPage() {
                         : "bg-gray-100 text-gray-800"
                   }`}
                 >
-                  {room.status}
+                  {room.status === "WAITING"
+                    ? "Waiting"
+                    : room.status === "IN_PROGRESS"
+                      ? "In Progress"
+                      : room.status === "FINISHED"
+                        ? "Finished"
+                        : room.status}
                 </span>
               </div>
 
