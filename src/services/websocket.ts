@@ -1,6 +1,6 @@
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
-import { GameRoom, ChatMessage } from "@/types/game";
+import { GameRoom, ChatMessage, GameWsEvent } from "@/types/game";
 
 interface StompFrame {
   headers: Record<string, string>;
@@ -141,6 +141,24 @@ export class WebSocketService {
     });
   }
 
+  makeMove(roomId: number, username: string, row: number, col: number): void {
+    if (!this.connected) return;
+
+    this.client!.publish({
+      destination: `/app/room/${roomId}/move`,
+      body: JSON.stringify({ username, row, col }),
+    });
+  }
+
+  returnToLobby(roomId: number, username: string): void {
+    if (!this.connected) return;
+
+    this.client!.publish({
+      destination: `/app/room/${roomId}/return-to-lobby`,
+      body: JSON.stringify({ username }),
+    });
+  }
+
   // Subscription methods
   subscribeToRoomPlayers(
     roomId: number,
@@ -178,7 +196,7 @@ export class WebSocketService {
 
   subscribeToGameEvents(
     roomId: number,
-    callback: (event: unknown) => void,
+    callback: (event: GameWsEvent) => void,
   ): () => void {
     if (!this.connected) return () => {};
 

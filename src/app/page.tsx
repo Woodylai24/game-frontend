@@ -222,10 +222,19 @@ function CreateRoomModal({
 }) {
   const [roomName, setRoomName] = useState("");
   const [gameType, setGameType] = useState("TicTacToe");
-  const [maxPlayers, setMaxPlayers] = useState(4);
+  const [maxPlayers, setMaxPlayers] = useState(2);
   const [isPrivate, setIsPrivate] = useState(false);
   const [password, setPassword] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+
+  const handleGameTypeChange = (newGameType: string) => {
+    setGameType(newGameType);
+    if (newGameType === "TicTacToe") {
+      setMaxPlayers(2);
+    }
+  };
+
+  const maxPlayersLocked = gameType === "TicTacToe";
 
   const handleCreateRoom = async () => {
     if (!roomName.trim()) return;
@@ -287,7 +296,7 @@ function CreateRoomModal({
             </label>
             <select
               value={gameType}
-              onChange={(e) => setGameType(e.target.value)}
+              onChange={(e) => handleGameTypeChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="TicTacToe">Tic Tac Toe</option>
@@ -304,7 +313,8 @@ function CreateRoomModal({
             <select
               value={maxPlayers}
               onChange={(e) => setMaxPlayers(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={maxPlayersLocked}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value={2}>2 Players</option>
               <option value={3}>3 Players</option>
@@ -312,6 +322,9 @@ function CreateRoomModal({
               <option value={6}>6 Players</option>
               <option value={8}>8 Players</option>
             </select>
+            {maxPlayersLocked && (
+              <p className="text-xs text-gray-500 mt-1">Tic Tac Toe requires exactly 2 players</p>
+            )}
           </div>
 
           <div className="flex items-center">
