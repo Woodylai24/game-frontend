@@ -1,26 +1,45 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { GameRoom, CreateRoomRequest } from "@/types/game";
+import { useAuth } from "@/context/AuthContext";
 import { webSocketService } from "@/services/websocket";
+import { apiFetch } from "@/services/api";
 
 export default function Home() {
-  const [username, setUsername] = useState("");
-  const [isConnected, setIsConnected] = useState(false);
+  const { user, loading, logout, isAuthenticated, isGuest } = useAuth();
+  const router = useRouter();
   const [rooms, setRooms] = useState<GameRoom[]>([]);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [joinRoomCode, setJoinRoomCode] = useState("");
+  const [wsConnected, setWsConnected] = useState(false);
 
   useEffect(() => {
-    // Load rooms when component mounts
-    if (isConnected) {
-      fetchRooms();
+    if (!loading && !isAuthenticated) {
+      router.push("/login");
     }
-  }, [isConnected]);
+  }, [loading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchRooms();
+      if (!wsConnected) {
+        const token = sessionStorage.getItem("token");
+        if (token) {
+          webSocketService.connect(token).then(() => {
+            webSocketService.setUsername(user.username);
+            setWsConnected(true);
+          }).catch(console.error);
+        }
+      }
+    }
+  }, [isAuthenticated, user]);
 
   const fetchRooms = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/rooms");
+      const response = await apiFetch("/api/rooms");
       if (response.ok) {
         const roomsData = await response.json();
         setRooms(roomsData);
@@ -30,62 +49,21 @@ export default function Home() {
     }
   };
 
-  const handleConnect = async () => {
-    if (!username.trim()) return;
-
-    try {
-      await webSocketService.connect(username);
-      setIsConnected(true);
-    } catch (error) {
-      console.error("Failed to connect:", error);
-      alert("Failed to connect to server");
-    }
-  };
-
-  const handleDisconnect = () => {
+  const handleLogout = () => {
     webSocketService.disconnect();
-    setIsConnected(false);
+    setWsConnected(false);
+    logout();
   };
 
   const handleJoinRoom = (roomCode: string) => {
     if (!roomCode.trim()) return;
-
-    // Navigate to room page
-    window.location.href = `/room/${roomCode}?username=${encodeURIComponent(username)}`;
+    router.push(`/room/${roomCode}`);
   };
 
-  if (!isConnected) {
+  if (loading || !isAuthenticated || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center mb-6">Game Stack</h1>
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="username"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Enter your username
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Your username"
-                onKeyPress={(e) => e.key === "Enter" && handleConnect()}
-              />
-            </div>
-            <button
-              onClick={handleConnect}
-              disabled={!username.trim()}
-              className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              Connect
-            </button>
-          </div>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -97,12 +75,29 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <h1 className="text-xl font-semibold">Game Stack</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Welcome, {username}</span>
+              <span className="text-sm text-gray-600">
+                Welcome, {user.username}
+              </span>
+              {isGuest && (
+                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                  Guest
+                </span>
+              )}
+              <Link
+                href="/settings"
+                className="text-gray-500 hover:text-gray-700"
+                title="Settings"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </Link>
               <button
-                onClick={handleDisconnect}
+                onClick={handleLogout}
                 className="text-sm text-red-600 hover:text-red-800"
               >
-                Disconnect
+                Logout
               </button>
             </div>
           </div>
@@ -199,7 +194,6 @@ export default function Home() {
 
       {showCreateRoom && (
         <CreateRoomModal
-          username={username}
           onClose={() => setShowCreateRoom(false)}
           onRoomCreated={(roomCode) => {
             setShowCreateRoom(false);
@@ -212,11 +206,9 @@ export default function Home() {
 }
 
 function CreateRoomModal({
-  username,
   onClose,
   onRoomCreated,
 }: {
-  username: string;
   onClose: () => void;
   onRoomCreated: (roomCode: string) => void;
 }) {
@@ -247,14 +239,10 @@ function CreateRoomModal({
         maxPlayers,
         isPrivate,
         password: isPrivate ? password : undefined,
-        hostUsername: username,
       };
 
-      const response = await fetch("http://localhost:8080/api/rooms", {
+      const response = await apiFetch("/api/rooms", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(request),
       });
 
@@ -323,7 +311,9 @@ function CreateRoomModal({
               <option value={8}>8 Players</option>
             </select>
             {maxPlayersLocked && (
-              <p className="text-xs text-gray-500 mt-1">Tic Tac Toe requires exactly 2 players</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Tic Tac Toe requires exactly 2 players
+              </p>
             )}
           </div>
 
