@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   GameRoom,
   ChatMessage,
@@ -9,14 +9,16 @@ import {
   PlayerSymbolInfo,
   GameWsEvent,
 } from "@/types/game";
+import { useAuth } from "@/context/AuthContext";
 import { webSocketService } from "@/services/websocket";
+import { apiFetch } from "@/services/api";
 import TicTacToeBoard from "./components/TicTacToeBoard";
 
 export default function RoomPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
+  const router = useRouter();
   const roomCode = params.roomCode as string;
-  const username = searchParams.get("username") || "";
+  const { user, loading, isAuthenticated } = useAuth();
 
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -40,10 +42,18 @@ export default function RoomPage() {
     (() => void)[]
   >([]);
 
+  const username = user?.username || "";
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [loading, isAuthenticated, router]);
+
   const connectAndJoinRoom = useCallback(
     async (roomPassword?: string) => {
       if (!username) {
-        setError("Username is required");
+        setError("Not authenticated");
         return;
       }
 
@@ -52,9 +62,7 @@ export default function RoomPage() {
           await webSocketService.connect(username);
         }
 
-        const response = await fetch(
-          `http://localhost:8080/api/rooms/code/${roomCode}`,
-        );
+        const response = await apiFetch(`/api/rooms/code/${roomCode}`);
         if (!response.ok) {
           if (response.status === 404) {
             setError("Room not found");
@@ -77,7 +85,6 @@ export default function RoomPage() {
         const unsubscribeRoomPlayers = webSocketService.subscribeToRoomPlayers(
           roomData.id,
           (updatedRoom) => {
-            console.log('[DEBUG] subscribeToRoomPlayers update', { status: updatedRoom.status, playerCount: updatedRoom.players?.length });
             setRoom(updatedRoom);
           },
         );
@@ -147,7 +154,6 @@ export default function RoomPage() {
   );
 
   const handleGameEvent = useCallback((event: GameWsEvent) => {
-    console.log('[DEBUG] handleGameEvent', event.event, event);
     switch (event.event) {
       case "game_started":
         setBoard(event.board);
@@ -188,11 +194,11 @@ export default function RoomPage() {
   }, []);
 
   useEffect(() => {
-    console.log('[DEBUG] useEffect running connectAndJoinRoom');
-    connectAndJoinRoom();
+    if (username) {
+      connectAndJoinRoom();
+    }
 
     return () => {
-      console.log('[DEBUG] useEffect cleanup - unsubscribing and leaving');
       unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
       if (room) {
         webSocketService.leaveRoom(room.id, username);
@@ -226,14 +232,12 @@ export default function RoomPage() {
     if (room) {
       webSocketService.leaveRoom(room.id, username);
     }
-    window.location.href = "/";
+    router.push("/");
   };
 
   const handleCellClick = (row: number, col: number) => {
-    console.log('[DEBUG] handleCellClick called', { row, col, roomId: room?.id, username, connected: webSocketService.isConnected() });
     if (!room) return;
     webSocketService.makeMove(room.id, username, row, col);
-    console.log('[DEBUG] makeMove sent');
   };
 
   const handleReturnToLobby = () => {
@@ -247,11 +251,21 @@ export default function RoomPage() {
     connectAndJoinRoom(password);
   };
 
+  if (loading || !isAuthenticated || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   if (showPasswordPrompt) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center mb-6">Private Room</h1>
+          <h1 className="text-2xl font-bold text-center mb-6">
+            Private Room
+          </h1>
           <p className="text-gray-600 text-center mb-4">
             This room requires a password to join.
           </p>
@@ -266,7 +280,7 @@ export default function RoomPage() {
             />
             <div className="flex space-x-2">
               <button
-                onClick={() => (window.location.href = "/")}
+                onClick={() => router.push("/")}
                 className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
               >
                 Cancel
@@ -292,7 +306,7 @@ export default function RoomPage() {
           <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
-            onClick={() => (window.location.href = "/")}
+            onClick={() => router.push("/")}
             className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
           >
             Back to Home
@@ -496,7 +510,9 @@ export default function RoomPage() {
                     </div>
                     <div className="flex items-center space-x-2">
                       {player.isReady && (
-                        <span className="text-green-600 text-sm">✓ Ready</span>
+                        <span className="text-green-600 text-sm">
+                          ✓ Ready
+                        </span>
                       )}
                     </div>
                   </div>
@@ -528,7 +544,9 @@ export default function RoomPage() {
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && handleSendMessage()
+                    }
                   />
                   <button
                     onClick={handleSendMessage}

@@ -1,3 +1,10 @@
+export interface AuthUser {
+  id: number;
+  username: string;
+  email: string;
+  displayName: string;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -38,7 +45,6 @@ export interface CreateRoomRequest {
   maxPlayers: number;
   isPrivate: boolean;
   password?: string;
-  hostUsername: string;
 }
 
 export interface JoinRoomRequest {
