@@ -59,7 +59,13 @@ export default function RoomPage() {
 
       try {
         if (!webSocketService.isConnected()) {
-          await webSocketService.connect(username);
+          const token = sessionStorage.getItem("token");
+          if (!token) {
+            setError("Not authenticated");
+            return;
+          }
+          await webSocketService.connect(token);
+          webSocketService.setUsername(username);
         }
 
         const response = await apiFetch(`/api/rooms/code/${roomCode}`);

@@ -16,64 +16,51 @@ export class WebSocketService {
   private connected = false;
   private username: string | null = null;
 
-  constructor() {
-    this.client = new Client({
-      webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
-      connectHeaders: {},
-      debug: (str: string) => {
-        console.log("STOMP: " + str);
-      },
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-    });
-
-    this.client.onConnect = () => {
-      console.log("Connected to WebSocket");
-      this.connected = true;
-      if (this.username) {
-        this.sendUserConnect(this.username);
-      }
-    };
-
-    this.client.onDisconnect = () => {
-      console.log("Disconnected from WebSocket");
-      this.connected = false;
-    };
-
-    this.client.onStompError = (frame: StompFrame) => {
-      console.error("Broker reported error: " + frame.headers["message"]);
-      console.error("Additional details: " + frame.body);
-    };
-  }
-
-  connect(username: string): Promise<void> {
-    this.username = username;
+  connect(token: string): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.connected) {
         resolve();
         return;
       }
 
-      this.client!.onConnect = () => {
+      this.client = new Client({
+        webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+        connectHeaders: {
+          Authorization: `Bearer ${token}`,
+        },
+        debug: (str: string) => {
+          console.log("STOMP: " + str);
+        },
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+      });
+
+      this.client.onConnect = () => {
         console.log("Connected to WebSocket");
         this.connected = true;
-        this.sendUserConnect(username);
+        this.sendUserConnect();
         resolve();
       };
 
-      this.client!.onStompError = (frame: StompFrame) => {
-        console.error("Connection error:", frame);
+      this.client.onDisconnect = () => {
+        console.log("Disconnected from WebSocket");
+        this.connected = false;
+      };
+
+      this.client.onStompError = (frame: StompFrame) => {
+        console.error("Broker reported error: " + frame.headers["message"]);
+        console.error("Additional details: " + frame.body);
         reject(new Error("Failed to connect to WebSocket"));
       };
 
-      this.client!.activate();
+      this.client.activate();
     });
   }
 
   disconnect(): void {
-    if (this.username) {
-      this.sendUserDisconnect(this.username);
+    if (this.connected) {
+      this.sendUserDisconnect();
     }
     if (this.client) {
       this.client.deactivate();
@@ -86,7 +73,10 @@ export class WebSocketService {
     return this.connected;
   }
 
-  // Room-related methods
+  setUsername(username: string): void {
+    this.username = username;
+  }
+
   joinRoom(
     roomId: number,
     roomCode: string,
@@ -98,7 +88,6 @@ export class WebSocketService {
     this.client!.publish({
       destination: `/app/room/${roomId}/join`,
       body: JSON.stringify({
-        username,
         roomCode,
         password: password || "",
       }),
@@ -110,7 +99,7 @@ export class WebSocketService {
 
     this.client!.publish({
       destination: `/app/room/${roomId}/leave`,
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({}),
     });
   }
 
@@ -119,7 +108,7 @@ export class WebSocketService {
 
     this.client!.publish({
       destination: `/app/room/${roomId}/start`,
-      body: JSON.stringify({ hostUsername }),
+      body: JSON.stringify({}),
     });
   }
 
@@ -128,7 +117,7 @@ export class WebSocketService {
 
     this.client!.publish({
       destination: `/app/room/${roomId}/chat`,
-      body: JSON.stringify({ username, message }),
+      body: JSON.stringify({ message }),
     });
   }
 
@@ -137,7 +126,7 @@ export class WebSocketService {
 
     this.client!.publish({
       destination: `/app/room/${roomId}/ready`,
-      body: JSON.stringify({ username, ready: ready.toString() }),
+      body: JSON.stringify({ ready: ready.toString() }),
     });
   }
 
@@ -146,7 +135,7 @@ export class WebSocketService {
 
     this.client!.publish({
       destination: `/app/room/${roomId}/move`,
-      body: JSON.stringify({ username, row, col }),
+      body: JSON.stringify({ row, col }),
     });
   }
 
@@ -155,11 +144,10 @@ export class WebSocketService {
 
     this.client!.publish({
       destination: `/app/room/${roomId}/return-to-lobby`,
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({}),
     });
   }
 
-  // Subscription methods
   subscribeToRoomPlayers(
     roomId: number,
     callback: (room: GameRoom) => void,
@@ -245,25 +233,23 @@ export class WebSocketService {
     return () => subscription.unsubscribe();
   }
 
-  // Private methods
-  private sendUserConnect(username: string): void {
+  private sendUserConnect(): void {
     if (!this.connected) return;
 
     this.client!.publish({
       destination: "/app/user/connect",
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({}),
     });
   }
 
-  private sendUserDisconnect(username: string): void {
+  private sendUserDisconnect(): void {
     if (!this.connected) return;
 
     this.client!.publish({
       destination: "/app/user/disconnect",
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({}),
     });
   }
 }
 
-// Singleton instance
 export const webSocketService = new WebSocketService();
