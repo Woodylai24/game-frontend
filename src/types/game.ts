@@ -1,8 +1,9 @@
 export interface AuthUser {
   id: number;
   username: string;
-  email: string;
+  email: string | null;
   displayName: string;
+  authProvider: string;
 }
 
 export interface User {

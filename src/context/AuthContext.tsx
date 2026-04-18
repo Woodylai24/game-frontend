@@ -12,6 +12,8 @@ import {
   AuthUser,
   login as authLogin,
   register as authRegister,
+  guestLogin as authGuestLogin,
+  updateUsername as authUpdateUsername,
   getCurrentUser,
   getToken,
   logout as authLogout,
@@ -21,12 +23,15 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isGuest: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (
     email: string,
     password: string,
     username: string,
   ) => Promise<void>;
+  guestLogin: () => Promise<void>;
+  updateUsername: (username: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -64,6 +69,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const guestLogin = useCallback(async () => {
+    const response = await authGuestLogin();
+    setUser(response.user);
+  }, []);
+
+  const updateUsername = useCallback(async (username: string) => {
+    const updatedUser = await authUpdateUsername(username);
+    setUser(updatedUser);
+  }, []);
+
   const logout = useCallback(() => {
     setUser(null);
     authLogout();
@@ -75,8 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         isAuthenticated: !!user,
+        isGuest: user?.authProvider === "guest",
         login,
         register,
+        guestLogin,
+        updateUsername,
         logout,
       }}
     >

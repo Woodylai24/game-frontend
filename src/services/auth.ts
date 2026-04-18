@@ -3,8 +3,9 @@ const API_BASE = "http://localhost:8080";
 export interface AuthUser {
   id: number;
   username: string;
-  email: string;
+  email: string | null;
   displayName: string;
+  authProvider: string;
 }
 
 export interface AuthResponse {
@@ -51,6 +52,21 @@ export async function login(
   return data;
 }
 
+export async function guestLogin(): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE}/api/auth/guest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Guest login failed");
+  }
+
+  sessionStorage.setItem("token", data.token);
+  return data;
+}
+
 export function logout(): void {
   sessionStorage.removeItem("token");
   window.location.href = "/login";
@@ -79,5 +95,26 @@ export async function getCurrentUser(): Promise<AuthUser> {
   }
 
   const data = await response.json();
+  return data.user;
+}
+
+export async function updateUsername(username: string): Promise<AuthUser> {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE}/api/auth/username`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ username }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to update username");
+  }
+
   return data.user;
 }

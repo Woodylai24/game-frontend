@@ -8,7 +8,7 @@ import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
 
 export default function Home() {
-  const { user, loading, logout, isAuthenticated } = useAuth();
+  const { user, loading, logout, isAuthenticated, isGuest } = useAuth();
   const router = useRouter();
   const [rooms, setRooms] = useState<GameRoom[]>([]);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
@@ -73,6 +73,11 @@ export default function Home() {
               <span className="text-sm text-gray-600">
                 Welcome, {user.username}
               </span>
+              {isGuest && (
+                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                  Guest
+                </span>
+              )}
               <button
                 onClick={handleLogout}
                 className="text-sm text-red-600 hover:text-red-800"

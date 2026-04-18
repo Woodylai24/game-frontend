@@ -18,7 +18,7 @@ export default function RoomPage() {
   const params = useParams();
   const router = useRouter();
   const roomCode = params.roomCode as string;
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, isGuest } = useAuth();
 
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -349,6 +349,11 @@ export default function RoomPage() {
               <span className="text-sm text-gray-600">
                 Playing as: {username}
               </span>
+              {isGuest && (
+                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                  Guest
+                </span>
+              )}
               <button
                 onClick={handleLeaveRoom}
                 disabled={isGameActive}
