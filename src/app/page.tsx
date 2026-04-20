@@ -12,6 +12,11 @@ export default function Home() {
   const { user, loading, logout, isAuthenticated, isGuest } = useAuth();
   const router = useRouter();
   const [rooms, setRooms] = useState<GameRoom[]>([]);
+  const [myRooms, setMyRooms] = useState<GameRoom[]>([]);
+  const [showPrivate, setShowPrivate] = useState(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('showPrivate') === 'true';
+    return false;
+  });
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [joinRoomCode, setJoinRoomCode] = useState("");
   const [wsConnected, setWsConnected] = useState(false);
@@ -25,8 +30,9 @@ export default function Home() {
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchRooms();
+      fetchMyRooms();
       if (!wsConnected) {
-        const token = sessionStorage.getItem("token");
+        const token = localStorage.getItem("token");
         if (token) {
           webSocketService.connect(token).then(() => {
             webSocketService.setUsername(user.username);
@@ -37,15 +43,45 @@ export default function Home() {
     }
   }, [isAuthenticated, user]);
 
+  // Auto-refresh room lists every 10 seconds
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetchRooms();
+    fetchMyRooms();
+  }, [isAuthenticated, user, showPrivate]);
+
+  // Auto-refresh room lists every 10 seconds
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      fetchRooms();
+      fetchMyRooms();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, showPrivate]);
+
   const fetchRooms = async () => {
     try {
-      const response = await apiFetch("/api/rooms");
+      const query = showPrivate ? "?includePrivate=true" : "";
+      const response = await apiFetch("/api/rooms" + query);
       if (response.ok) {
         const roomsData = await response.json();
         setRooms(roomsData);
       }
     } catch (error) {
       console.error("Failed to fetch rooms:", error);
+    }
+  };
+
+  const fetchMyRooms = async () => {
+    try {
+      const response = await apiFetch("/api/rooms/my");
+      if (response.ok) {
+        const roomsData = await response.json();
+        setMyRooms(roomsData);
+      }
+    } catch (error) {
+      console.error("Failed to fetch my rooms:", error);
     }
   };
 
@@ -67,6 +103,48 @@ export default function Home() {
       </div>
     );
   }
+
+  const getRoomActionButton = (room: GameRoom) => {
+    if (room.status === "IN_PROGRESS" && room.activeGameSessionId) {
+      return (
+        <button
+          onClick={() => router.push(`/game/${room.activeGameSessionId}`)}
+          className="w-full bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 text-sm"
+        >
+          Enter Game
+        </button>
+      );
+    }
+    if (room.status === "FINISHED" && room.activeGameSessionId) {
+      return (
+        <button
+          onClick={() => router.push(`/game/${room.activeGameSessionId}`)}
+          className="w-full bg-purple-500 text-white py-2 px-4 rounded-md hover:bg-purple-600 text-sm"
+        >
+          View Result
+        </button>
+      );
+    }
+    return (
+      <button
+        onClick={() => handleJoinRoom(room.roomCode)}
+        className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 text-sm"
+      >
+        Enter Room
+      </button>
+    );
+  };
+
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      WAITING: "bg-yellow-100 text-yellow-800",
+      IN_PROGRESS: "bg-green-100 text-green-800",
+      FINISHED: "bg-gray-100 text-gray-800",
+      PAUSED: "bg-blue-100 text-blue-800",
+      CANCELLED: "bg-red-100 text-red-800",
+    };
+    return styles[status] || "bg-gray-100 text-gray-800";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -107,8 +185,49 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium">Game Rooms</h2>
-            <div className="flex space-x-2">
+            <h2 className="text-lg font-medium">Your Rooms</h2>
+            <button
+              onClick={fetchMyRooms}
+              className="text-sm text-blue-600 hover:text-blue-800"
+            >
+              Refresh
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {myRooms.length === 0 ? (
+              <div className="col-span-full text-center py-6 text-gray-500 bg-white rounded-lg shadow border">
+                You&apos;re not in any rooms
+              </div>
+            ) : (
+              myRooms.map((room) => (
+                <div
+                  key={room.id}
+                  className="bg-white p-4 rounded-lg shadow border"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-medium">{room.roomName}</h3>
+                    <span className={`px-2 py-1 text-xs rounded ${getStatusBadge(room.status)}`}>
+                      {room.status === "WAITING" ? "Waiting" : room.status === "IN_PROGRESS" ? "In Progress" : room.status === "FINISHED" ? "Finished" : room.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Game: {room.gameType}{room.isPrivate && <span className="ml-1 text-xs">🔒</span>}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Players: {room.currentPlayers}/{room.maxPlayers}
+                  </p>
+                  {getRoomActionButton(room)}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium">Available Rooms</h2>
+            <div className="flex items-center space-x-3">
               <button
                 onClick={() => setShowCreateRoom(true)}
                 className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
@@ -121,6 +240,19 @@ export default function Home() {
               >
                 Refresh
               </button>
+              <label className="flex items-center space-x-1 text-sm text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={showPrivate}
+                  onChange={(e) => {
+                    const val = e.target.checked;
+                    localStorage.setItem('showPrivate', String(val));
+                    setShowPrivate(val);
+                  }}
+                  className="rounded"
+                />
+                <span>Show private rooms</span>
+              </label>
             </div>
           </div>
 
@@ -167,7 +299,7 @@ export default function Home() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">
-                    Game: {room.gameType}
+                    Game: {room.gameType}{room.isPrivate && <span className="ml-1 text-xs">🔒</span>}
                   </p>
                   <p className="text-sm text-gray-600 mb-2">
                     Players: {room.currentPlayers}/{room.maxPlayers}
@@ -229,7 +361,7 @@ function CreateRoomModal({
   const maxPlayersLocked = gameType === "TicTacToe";
 
   const handleCreateRoom = async () => {
-    if (!roomName.trim()) return;
+    if (roomName.trim().length < 3) return;
 
     setIsCreating(true);
     try {
@@ -358,7 +490,7 @@ function CreateRoomModal({
           </button>
           <button
             onClick={handleCreateRoom}
-            disabled={!roomName.trim() || isCreating}
+            disabled={roomName.trim().length < 3 || isCreating}
             className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-300"
           >
             {isCreating ? "Creating..." : "Create Room"}

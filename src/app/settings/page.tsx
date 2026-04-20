@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { apiFetch } from "@/services/api";
 
 export default function SettingsPage() {
-  const { user, loading, isAuthenticated, isGuest, updateUsername, logout } =
+  const { user, loading, isAuthenticated, isGuest, updateUsername, updateDisplayName, logout } =
     useAuth();
   const router = useRouter();
 
@@ -63,19 +62,12 @@ export default function SettingsPage() {
     setDisplayNameSaving(true);
 
     try {
-      const response = await apiFetch("/api/auth/me", {
-        method: "PUT",
-        body: JSON.stringify({ displayName: newDisplayName.trim() }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setDisplayNameError(data.error || "Failed to update display name");
-        return;
-      }
+      await updateDisplayName(newDisplayName.trim());
       setEditingDisplayName(false);
-      window.location.reload();
-    } catch (_err) {
-      setDisplayNameError("Something went wrong");
+    } catch (err) {
+      setDisplayNameError(
+        err instanceof Error ? err.message : "Failed to update display name",
+      );
     } finally {
       setDisplayNameSaving(false);
     }
