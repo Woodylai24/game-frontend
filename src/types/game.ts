@@ -38,6 +38,8 @@ export interface GameRoom {
   createdAt: string;
   hostUsername: string;
   players: Player[];
+  activeGameSessionId: number | null;
+  gameFinished?: boolean;
 }
 
 export interface CreateRoomRequest {
@@ -80,6 +82,8 @@ export interface PlayerSymbolInfo {
 
 export interface GameSessionData {
   id: number;
+  roomId: number;
+  roomCode: string;
   board: Board;
   currentPlayerOrder: number;
   currentTurn: number;

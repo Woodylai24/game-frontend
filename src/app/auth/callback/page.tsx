@@ -16,12 +16,13 @@ function AuthCallbackInner() {
       return;
     }
 
-    sessionStorage.setItem("token", token);
+    localStorage.setItem("token", token);
 
     if (needsUsername) {
       router.push("/auth/set-username");
     } else {
-      router.push("/");
+      // Force full page reload so AuthContext re-initializes with the new token
+      window.location.href = "/";
     }
   }, [searchParams, router]);
 

@@ -223,7 +223,7 @@ export class WebSocketService {
     if (!this.connected) return () => {};
 
     const subscription = this.client!.subscribe(
-      `/user/${username}/queue/room/join`,
+      `/topic/user/${username}/join`,
       (message: StompMessage) => {
         const response = JSON.parse(message.body);
         callback(response);

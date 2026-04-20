@@ -29,7 +29,7 @@ export async function register(
     throw new Error(data.error || "Registration failed");
   }
 
-  sessionStorage.setItem("token", data.token);
+  localStorage.setItem("token", data.token);
   return data;
 }
 
@@ -48,11 +48,33 @@ export async function login(
     throw new Error(data.error || "Login failed");
   }
 
-  sessionStorage.setItem("token", data.token);
+  localStorage.setItem("token", data.token);
   return data;
 }
 
 export async function guestLogin(): Promise<AuthResponse> {
+  // Try to reuse existing guest token
+  const savedGuestToken = localStorage.getItem("guestToken");
+  if (savedGuestToken) {
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${savedGuestToken}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user?.authProvider === "guest") {
+          localStorage.setItem("token", savedGuestToken);
+          return { token: savedGuestToken, user: data.user };
+        }
+      }
+      // Token invalid or not guest — clear it
+      localStorage.removeItem("guestToken");
+    } catch {
+      localStorage.removeItem("guestToken");
+    }
+  }
+
+  // Create new guest account
   const response = await fetch(`${API_BASE}/api/auth/guest`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -63,18 +85,20 @@ export async function guestLogin(): Promise<AuthResponse> {
     throw new Error(data.error || "Guest login failed");
   }
 
-  sessionStorage.setItem("token", data.token);
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("guestToken", data.token);
   return data;
 }
 
 export function logout(): void {
-  sessionStorage.removeItem("token");
+  localStorage.removeItem("token");
+  // Keep guestToken so guest can be reused
   window.location.href = "/login";
 }
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return sessionStorage.getItem("token");
+  return localStorage.getItem("token");
 }
 
 export function isAuthenticated(): boolean {
@@ -90,7 +114,7 @@ export async function getCurrentUser(): Promise<AuthUser> {
   });
 
   if (!response.ok) {
-    sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
     throw new Error("Session expired");
   }
 
@@ -114,6 +138,27 @@ export async function updateUsername(username: string): Promise<AuthUser> {
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.error || "Failed to update username");
+  }
+
+  return data.user;
+}
+
+export async function updateDisplayNameApi(displayName: string): Promise<AuthUser> {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`${API_BASE}/api/auth/me`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ displayName }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to update display name");
   }
 
   return data.user;

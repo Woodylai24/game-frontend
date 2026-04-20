@@ -4,7 +4,7 @@ export async function apiFetch(
   path: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const token = sessionStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -21,7 +21,7 @@ export async function apiFetch(
   });
 
   if (response.status === 401) {
-    sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
     window.location.href = "/login";
     throw new Error("Unauthorized");
   }

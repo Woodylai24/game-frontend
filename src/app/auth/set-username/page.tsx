@@ -34,7 +34,13 @@ export default function SetUsernamePage() {
         return;
       }
 
-      router.push("/");
+      // Save new token (JWT contains the updated username)
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      // Force full reload so AuthContext picks up the updated username
+      window.location.href = "/";
     } catch (err) {
       setError("Something went wrong");
     } finally {
