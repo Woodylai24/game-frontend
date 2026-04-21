@@ -233,6 +233,23 @@ export class WebSocketService {
     return () => subscription.unsubscribe();
   }
 
+  subscribe<T>(
+    destination: string,
+    callback: (data: T) => void,
+  ): () => void {
+    if (!this.connected) return () => {};
+
+    const subscription = this.client!.subscribe(
+      destination,
+      (message: StompMessage) => {
+        const data: T = JSON.parse(message.body);
+        callback(data);
+      },
+    );
+
+    return () => subscription.unsubscribe();
+  }
+
   private sendUserConnect(): void {
     if (!this.connected) return;
 

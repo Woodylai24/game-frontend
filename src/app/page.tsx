@@ -3,10 +3,16 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { GameRoom, CreateRoomRequest } from "@/types/game";
 import { useAuth } from "@/context/AuthContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
+
+interface RoomEvent {
+  type: "ROOM_CREATED" | "ROOM_UPDATED" | "ROOM_STARTED";
+  room: GameRoom;
+}
 
 export default function Home() {
   const { user, loading, logout, isAuthenticated, isGuest } = useAuth();
@@ -43,22 +49,37 @@ export default function Home() {
     }
   }, [isAuthenticated, user]);
 
-  // Auto-refresh room lists every 10 seconds
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchRooms();
     fetchMyRooms();
   }, [isAuthenticated, user, showPrivate]);
 
-  // Auto-refresh room lists every 10 seconds
   useEffect(() => {
-    if (!isAuthenticated) return;
-    const interval = setInterval(() => {
-      fetchRooms();
-      fetchMyRooms();
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated, showPrivate]);
+    if (!isAuthenticated || !wsConnected) return;
+
+    const unsubscribe = webSocketService.subscribe<RoomEvent>(
+      "/topic/rooms",
+      (event) => {
+        if (event.type === "ROOM_CREATED") {
+          setRooms((prev) => [event.room, ...prev]);
+          // Only add to myRooms if user is the host
+          if (event.room.hostUsername === user?.username) {
+            setMyRooms((prev) => [event.room, ...prev]);
+          }
+        } else if (event.type === "ROOM_UPDATED" || event.type === "ROOM_STARTED") {
+          setRooms((prev) =>
+            prev.map((r) => (r.id === event.room.id ? event.room : r)),
+          );
+          setMyRooms((prev) =>
+            prev.map((r) => (r.id === event.room.id ? event.room : r)),
+          );
+        }
+      },
+    );
+
+    return () => unsubscribe();
+  }, [isAuthenticated, wsConnected]);
 
   const fetchRooms = async () => {
     try {
@@ -200,11 +221,17 @@ export default function Home() {
                 You&apos;re not in any rooms
               </div>
             ) : (
-              myRooms.map((room) => (
-                <div
-                  key={room.id}
-                  className="bg-white p-4 rounded-lg shadow border"
-                >
+              <AnimatePresence>
+                {myRooms.map((room, index) => (
+                  <motion.div
+                    key={room.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    layout
+                    transition={{ duration: 0.3 }}
+                    className="bg-white p-4 rounded-lg shadow border"
+                  >
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium">{room.roomName}</h3>
                     <span className={`px-2 py-1 text-xs rounded ${getStatusBadge(room.status)}`}>
@@ -218,8 +245,10 @@ export default function Home() {
                     Players: {room.currentPlayers}/{room.maxPlayers}
                   </p>
                   {getRoomActionButton(room)}
-                </div>
-              ))
+                  </motion.div>
+                ))
+              }
+              </AnimatePresence>
             )}
           </div>
         </div>
@@ -281,11 +310,17 @@ export default function Home() {
                 No rooms available. Create one to get started!
               </div>
             ) : (
-              rooms.map((room) => (
-                <div
-                  key={room.id}
-                  className="bg-white p-4 rounded-lg shadow border"
-                >
+              <AnimatePresence>
+                {rooms.map((room, index) => (
+                  <motion.div
+                    key={room.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    layout
+                    transition={{ duration: 0.3 }}
+                    className="bg-white p-4 rounded-lg shadow border"
+                  >
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium">{room.roomName}</h3>
                     <span
@@ -317,8 +352,10 @@ export default function Home() {
                   >
                     {room.currentPlayers >= room.maxPlayers ? "Full" : "Join"}
                   </button>
-                </div>
-              ))
+                  </motion.div>
+                ))
+              }
+              </AnimatePresence>
             )}
           </div>
         </div>
