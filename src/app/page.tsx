@@ -10,7 +10,7 @@ import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
 
 interface RoomEvent {
-  type: "ROOM_CREATED" | "ROOM_UPDATED" | "ROOM_STARTED";
+  type: "ROOM_CREATED" | "ROOM_UPDATED" | "ROOM_STARTED" | "ROOM_DELETED";
   room: GameRoom;
 }
 
@@ -74,6 +74,9 @@ export default function Home() {
           setMyRooms((prev) =>
             prev.map((r) => (r.id === event.room.id ? event.room : r)),
           );
+        } else if (event.type === "ROOM_DELETED") {
+          setRooms((prev) => prev.filter((r) => r.id !== event.room.id));
+          setMyRooms((prev) => prev.filter((r) => r.id !== event.room.id));
         }
       },
     );
