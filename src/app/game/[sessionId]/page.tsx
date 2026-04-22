@@ -20,9 +20,17 @@ export default function GamePage() {
   const [error, setError] = useState("");
   const [gameType, setGameType] = useState<string>("");
 
+  // Also check if LOTR state loads successfully as fallback
   const username = user?.username || "";
 
   const lotr = useLotrGame(sessionId, sessionData?.roomId ?? 0, username);
+
+  // If LOTR state loaded successfully, it's a LOTR game
+  useEffect(() => {
+    if (lotr.lotrState && !gameType) {
+      setGameType("LOTR");
+    }
+  }, [lotr.lotrState]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
