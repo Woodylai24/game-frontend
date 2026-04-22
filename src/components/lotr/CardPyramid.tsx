@@ -58,8 +58,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
       <div className="flex flex-col items-center gap-1">
         {rows.map((row, ri) => (
           <div key={ri}
-            className="flex gap-1"
-            style={{ marginLeft: row.offset > 0 ? `${row.offset}px` : undefined }}
+            className="flex gap-1 justify-center"
           >
             {row.slots.map((slot, si) => {
               if (!slot) {
@@ -82,15 +81,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                   `}
                 >
                   {slot.cardDefId && slot.faceUp && card ? (
-                    <div className={`w-full h-full flex flex-col items-center justify-center p-0.5 ${CARD_COLOR_BG[card.color]}`}>
-                      <div className={`font-bold leading-tight ${CARD_COLOR_TEXT[card.color]}`}>{card.name.split(" ").slice(0, 2).join(" ")}</div>
-                      {card.coinCost > 0 && <div className="text-[8px]">🪙{card.coinCost}</div>}
-                      {card.skillCost.length > 0 && (
-                        <div className="flex gap-0.5 flex-wrap justify-center">
-                          {card.skillCost.map((s, i) => <span key={i} className={`px-0.5 rounded text-[7px] ${SKILL_COLOR[s]}`}>{SKILL_ABBR[s]}</span>)}
-                        </div>
-                      )}
-                    </div>
+                    <img src={getCardImagePath(card.id, card.chapter)} alt={card.name} className="w-full h-full object-cover" />
                   ) : slot.cardDefId && !slot.faceUp ? (
                     <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-cover" />
                   ) : null}
@@ -203,16 +194,11 @@ function CardActionModal({ card, slot, canChain, canAfford, skillMap, myCoins, o
 
 interface PyramidRow {
   slots: (LotrCardSlot | null)[];
-  offset: number; // left margin in px for half-card alignment
 }
 
 function getRows(slots: LotrCardSlot[], chapter: number): PyramidRow[] {
   const rowSizes = chapter === 1 ? [2, 3, 4, 5, 6] : chapter === 2 ? [6, 5, 4, 3, 2] : [2, 3, 4, 2, 4, 3, 2];
-  // Card width in px: 64 (w-16) on mobile, 80 (w-20) on sm+. Use 80 for calculation, gap is 4px (gap-1)
-  const cardW = 80;
-  const gapW = 4;
-  const unitW = cardW + gapW;
-
+  const maxRow = Math.max(...rowSizes);
   const rows: PyramidRow[] = [];
   let idx = 0;
   for (let ri = 0; ri < rowSizes.length; ri++) {
@@ -220,29 +206,23 @@ function getRows(slots: LotrCardSlot[], chapter: number): PyramidRow[] {
     const rowSlots: (LotrCardSlot | null)[] = [];
 
     if (chapter === 3 && ri === 3) {
-      // Diamond row 4: 2 edge cards with gap in middle
-      // Full width row would be size=4, so gap = 2 card spaces
+      // Diamond row 4: 2 edge cards with gap in middle to fill width of 4
       if (idx < slots.length) rowSlots.push(slots[idx++]);
-      rowSlots.push(null); // gap
-      rowSlots.push(null); // gap
+      rowSlots.push(null);
+      rowSlots.push(null);
       if (idx < slots.length) rowSlots.push(slots[idx++]);
-      rows.push({ slots: rowSlots, offset: 0 });
     } else {
+      // Center with null padding
+      const pad = maxRow - size;
+      const leftPad = Math.floor(pad / 2);
+      const rightPad = Math.ceil(pad / 2);
+      for (let p = 0; p < leftPad; p++) rowSlots.push(null);
       for (let i = 0; i < size; i++) {
         if (idx < slots.length) rowSlots.push(slots[idx++]);
       }
-      rows.push({ slots: rowSlots, offset: 0 });
+      for (let p = 0; p < rightPad; p++) rowSlots.push(null);
     }
+    rows.push({ slots: rowSlots });
   }
-
-  // Calculate offsets: center each row relative to the widest row
-  const maxSlots = Math.max(...rows.map(r => r.slots.length));
-  const maxRowWidth = maxSlots * unitW - gapW;
-
-  for (const row of rows) {
-    const rowWidth = row.slots.length * unitW - gapW;
-    row.offset = Math.round((maxRowWidth - rowWidth) / 2);
-  }
-
   return rows;
 }
