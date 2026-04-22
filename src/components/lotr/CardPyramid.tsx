@@ -83,7 +83,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                 >
                   {slot.cardDefId && slot.faceUp && card ? (
                     <img src={getCardImagePath(card.id, card.chapter)} alt={card.name} className="w-full h-full object-contain" />
-                  ) : slot.cardDefId && !slot.faceUp ? (
+                  ) : !slot.faceUp ? (
                     <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-contain" />
                   ) : null}
                 </button>
