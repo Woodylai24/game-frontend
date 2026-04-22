@@ -24,7 +24,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
 
   const mySkills: Record<string, number> = {};
   if (me) {
-    for (const id of me.playedCardIds) {
+    for (const id of (me.playedCardIds || [])) {
       const def = getCardDef(id);
       if (def?.color === "GREY" && def.greySkills) {
         for (const choice of def.greySkills) {
@@ -34,7 +34,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
     }
   }
 
-  const fortressCount = state.regions.filter(r => r.fortress === mySide).length;
+  const fortressCount = (state.regions || []).filter(r => r.fortress === mySide).length;
   const isFinished = gameStatus === "FINISHED";
 
   return (
