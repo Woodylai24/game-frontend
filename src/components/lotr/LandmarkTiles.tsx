@@ -36,7 +36,7 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, mySkills, 
             disabled={!isMyTurn}
             className="relative group">
             <img src={getLandmarkImagePath(tile.id)} alt={tile.name}
-              className={`w-24 h-16 sm:w-32 sm:h-20 rounded border-2 object-contain
+              className={`w-16 h-16 sm:w-20 sm:h-20 rounded border-2 object-contain
                 ${isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer" : "border-gray-600"}`} />
             <div className="absolute inset-0 bg-black/80 rounded opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-1 pointer-events-none">
               <div className="text-white text-[9px] font-bold">{tile.name}</div>
@@ -49,7 +49,7 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, mySkills, 
           </button>
         ))}
         {Array.from({ length: faceDownCount }).map((_, i) => (
-          <div key={`fd-${i}`} className="w-24 h-16 sm:w-32 sm:h-20 rounded bg-gray-700 border-2 border-gray-600 flex items-center justify-center">
+          <div key={`fd-${i}`} className="w-16 h-16 sm:w-20 sm:h-20 rounded bg-gray-700 border-2 border-gray-600 flex items-center justify-center">
             <div className="text-gray-500 text-[10px]">?</div>
           </div>
         ))}

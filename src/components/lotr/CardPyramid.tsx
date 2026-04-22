@@ -59,12 +59,12 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
         {rows.map((row, ri) => (
           <div key={ri}
             className="flex gap-1 justify-center"
-            style={rows[ri].halfOffset ? { paddingLeft: '42px', paddingRight: '42px' } : undefined}
+            style={rows[ri].halfOffset ? { paddingLeft: '70px', paddingRight: '0px' } : undefined}
           >
             {row.slots.map((slot, si) => {
               if (!slot) {
                 // Gap spacer for diamond
-                return <div key={`gap-${ri}-${si}`} className="w-16 h-20 sm:w-20 sm:h-24" />;
+                return <div key={`gap-${ri}-${si}`} className="w-[60px] h-[90px] sm:w-[70px] sm:h-[105px]" />;
               }
               const isAvailable = slot.cardDefId && slot.coveredBy.length === 0;
               const card = slot.cardDefId ? getCardDef(slot.cardDefId) : null;
@@ -74,7 +74,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                   key={slot.id}
                   onClick={() => isAvailable && isMyTurn && setSelectedSlot(slot)}
                   disabled={!isAvailable || !isMyTurn}
-                  className={`w-16 h-20 sm:w-20 sm:h-24 rounded border-2 text-[8px] sm:text-[10px] transition-all overflow-hidden relative
+                  className={`w-[60px] h-[90px] sm:w-[70px] sm:h-[105px] rounded border-2 text-[8px] sm:text-[10px] transition-all overflow-hidden relative
                     ${!slot.cardDefId ? "border-gray-700 bg-gray-700/30 opacity-30" :
                       !slot.faceUp ? "border-gray-600 bg-gray-700" :
                       isAvailable && isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
@@ -82,9 +82,9 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                   `}
                 >
                   {slot.cardDefId && slot.faceUp && card ? (
-                    <img src={getCardImagePath(card.id, card.chapter)} alt={card.name} className="w-full h-full object-cover" />
+                    <img src={getCardImagePath(card.id, card.chapter)} alt={card.name} className="w-full h-full object-contain" />
                   ) : slot.cardDefId && !slot.faceUp ? (
-                    <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-cover" />
+                    <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-contain" />
                   ) : null}
                 </button>
               );
