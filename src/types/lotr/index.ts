@@ -79,7 +79,6 @@ export interface LotrGameState {
   discardPile: string[];
   landmarkTiles: LotrLandmarkTileDef[];
   allianceTokenStacks: Record<string, LotrAllianceTokenDef[]>;
-  coinReserve: number;
 }
 
 export interface LotrStateResponse {
@@ -145,7 +144,17 @@ export const REGION_POSITIONS: Record<LotrRegion, { x: number; y: number }> = {
   MORDOR: { x: 75, y: 65 },
 };
 
+// Combined image mapping: some cards share a single image file
+const CARD_IMAGE_MAP: Record<string, string> = {
+  "C1-12": "12_13", "C1-13": "12_13",
+  "C1-14": "14_15", "C1-15": "14_15",
+  "C1-18": "18_19", "C1-19": "18_19",
+  "C1-20": "20_21_22_23", "C1-21": "20_21_22_23", "C1-22": "20_21_22_23", "C1-23": "20_21_22_23",
+};
+
 export function getCardImagePath(cardDefId: string, chapter: number): string {
+  const mapped = CARD_IMAGE_MAP[cardDefId];
+  if (mapped) return `/lotr/Cards/Chapter_${chapter}/${mapped}.png`;
   const num = parseInt(cardDefId.split("-")[1]);
   return `/lotr/Cards/Chapter_${chapter}/${num}.png`;
 }

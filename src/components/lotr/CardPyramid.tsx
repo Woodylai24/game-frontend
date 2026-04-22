@@ -200,14 +200,25 @@ function getRows(slots: LotrCardSlot[], chapter: number): (LotrCardSlot | null)[
   const maxRow = Math.max(...rowSizes);
   const rows: (LotrCardSlot | null)[][] = [];
   let idx = 0;
-  for (const size of rowSizes) {
+  for (let ri = 0; ri < rowSizes.length; ri++) {
+    const size = rowSizes[ri];
     const row: (LotrCardSlot | null)[] = [];
-    const pad = (maxRow - size) / 2;
-    for (let p = 0; p < Math.floor(pad); p++) row.push(null);
-    for (let i = 0; i < size; i++) {
-      if (idx < slots.length) row.push(slots[idx++]);
+    // Ch3 diamond row 4 (ri=3, size=2): edge cards with gap in middle
+    if (chapter === 3 && ri === 3) {
+      for (let i = 0; i < size; i++) {
+        if (idx < slots.length) row.push(slots[idx++]);
+      }
+      // Add gap in middle: [card, null, null, card]
+      const gap = maxRow - size; // 2
+      row.splice(1, 0, ...Array(gap).fill(null));
+    } else {
+      const pad = (maxRow - size) / 2;
+      for (let p = 0; p < Math.floor(pad); p++) row.push(null);
+      for (let i = 0; i < size; i++) {
+        if (idx < slots.length) row.push(slots[idx++]);
+      }
+      for (let p = 0; p < Math.ceil(pad); p++) row.push(null);
     }
-    for (let p = 0; p < Math.ceil(pad); p++) row.push(null);
     rows.push(row);
   }
   return rows;
