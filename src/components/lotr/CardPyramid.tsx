@@ -57,9 +57,15 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
 
       <div className="flex flex-col items-center gap-1">
         {rows.map((row, ri) => (
-          <div key={ri} className="flex gap-1 justify-center">
-            {row.map(slot => {
-              if (!slot) return <div key={`empty-${ri}`} className="w-16 h-20 sm:w-20 sm:h-24" />;
+          <div key={ri}
+            className="flex gap-1"
+            style={{ marginLeft: row.offset > 0 ? `${row.offset}px` : undefined }}
+          >
+            {row.slots.map((slot, si) => {
+              if (!slot) {
+                // Gap spacer for diamond
+                return <div key={`gap-${ri}-${si}`} className="w-16 h-20 sm:w-20 sm:h-24" />;
+              }
               const isAvailable = slot.cardDefId && slot.coveredBy.length === 0;
               const card = slot.cardDefId ? getCardDef(slot.cardDefId) : null;
 
@@ -195,31 +201,48 @@ function CardActionModal({ card, slot, canChain, canAfford, skillMap, myCoins, o
   );
 }
 
-function getRows(slots: LotrCardSlot[], chapter: number): (LotrCardSlot | null)[][] {
+interface PyramidRow {
+  slots: (LotrCardSlot | null)[];
+  offset: number; // left margin in px for half-card alignment
+}
+
+function getRows(slots: LotrCardSlot[], chapter: number): PyramidRow[] {
   const rowSizes = chapter === 1 ? [2, 3, 4, 5, 6] : chapter === 2 ? [6, 5, 4, 3, 2] : [2, 3, 4, 2, 4, 3, 2];
-  const maxRow = Math.max(...rowSizes);
-  const rows: (LotrCardSlot | null)[][] = [];
+  // Card width in px: 64 (w-16) on mobile, 80 (w-20) on sm+. Use 80 for calculation, gap is 4px (gap-1)
+  const cardW = 80;
+  const gapW = 4;
+  const unitW = cardW + gapW;
+
+  const rows: PyramidRow[] = [];
   let idx = 0;
   for (let ri = 0; ri < rowSizes.length; ri++) {
     const size = rowSizes[ri];
-    const row: (LotrCardSlot | null)[] = [];
-    // Ch3 diamond row 4 (ri=3, size=2): edge cards with gap in middle
+    const rowSlots: (LotrCardSlot | null)[] = [];
+
     if (chapter === 3 && ri === 3) {
-      for (let i = 0; i < size; i++) {
-        if (idx < slots.length) row.push(slots[idx++]);
-      }
-      // Add gap in middle: [card, null, null, card]
-      const gap = maxRow - size; // 2
-      row.splice(1, 0, ...Array(gap).fill(null));
+      // Diamond row 4: 2 edge cards with gap in middle
+      // Full width row would be size=4, so gap = 2 card spaces
+      if (idx < slots.length) rowSlots.push(slots[idx++]);
+      rowSlots.push(null); // gap
+      rowSlots.push(null); // gap
+      if (idx < slots.length) rowSlots.push(slots[idx++]);
+      rows.push({ slots: rowSlots, offset: 0 });
     } else {
-      const pad = (maxRow - size) / 2;
-      for (let p = 0; p < Math.floor(pad); p++) row.push(null);
       for (let i = 0; i < size; i++) {
-        if (idx < slots.length) row.push(slots[idx++]);
+        if (idx < slots.length) rowSlots.push(slots[idx++]);
       }
-      for (let p = 0; p < Math.ceil(pad); p++) row.push(null);
+      rows.push({ slots: rowSlots, offset: 0 });
     }
-    rows.push(row);
   }
+
+  // Calculate offsets: center each row relative to the widest row
+  const maxSlots = Math.max(...rows.map(r => r.slots.length));
+  const maxRowWidth = maxSlots * unitW - gapW;
+
+  for (const row of rows) {
+    const rowWidth = row.slots.length * unitW - gapW;
+    row.offset = Math.round((maxRowWidth - rowWidth) / 2);
+  }
+
   return rows;
 }
