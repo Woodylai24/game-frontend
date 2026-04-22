@@ -59,6 +59,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
         {rows.map((row, ri) => (
           <div key={ri}
             className="flex gap-1 justify-center"
+            style={rows[ri].halfOffset ? { paddingLeft: '42px', paddingRight: '42px' } : undefined}
           >
             {row.slots.map((slot, si) => {
               if (!slot) {
@@ -194,6 +195,7 @@ function CardActionModal({ card, slot, canChain, canAfford, skillMap, myCoins, o
 
 interface PyramidRow {
   slots: (LotrCardSlot | null)[];
+  halfOffset: boolean;
 }
 
 function getRows(slots: LotrCardSlot[], chapter: number): PyramidRow[] {
@@ -206,23 +208,25 @@ function getRows(slots: LotrCardSlot[], chapter: number): PyramidRow[] {
     const rowSlots: (LotrCardSlot | null)[] = [];
 
     if (chapter === 3 && ri === 3) {
-      // Diamond row 4: 2 edge cards with gap in middle to fill width of 4
       if (idx < slots.length) rowSlots.push(slots[idx++]);
       rowSlots.push(null);
       rowSlots.push(null);
       if (idx < slots.length) rowSlots.push(slots[idx++]);
+      rows.push({ slots: rowSlots, halfOffset: false });
     } else {
-      // Center with null padding
       const pad = maxRow - size;
       const leftPad = Math.floor(pad / 2);
       const rightPad = Math.ceil(pad / 2);
+      // Half-offset needed when row differs from adjacent rows by odd count
+      // i.e. when this row size has different parity than maxRow
+      const needsOffset = (maxRow - size) % 2 !== 0;
       for (let p = 0; p < leftPad; p++) rowSlots.push(null);
       for (let i = 0; i < size; i++) {
         if (idx < slots.length) rowSlots.push(slots[idx++]);
       }
       for (let p = 0; p < rightPad; p++) rowSlots.push(null);
+      rows.push({ slots: rowSlots, halfOffset: ri % 2 === 1 });
     }
-    rows.push({ slots: rowSlots });
   }
   return rows;
 }
