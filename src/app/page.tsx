@@ -393,12 +393,12 @@ function CreateRoomModal({
 
   const handleGameTypeChange = (newGameType: string) => {
     setGameType(newGameType);
-    if (newGameType === "TicTacToe") {
+    if (newGameType === "TicTacToe" || newGameType === "LOTR") {
       setMaxPlayers(2);
     }
   };
 
-  const maxPlayersLocked = gameType === "TicTacToe";
+  const maxPlayersLocked = gameType === "TicTacToe" || gameType === "LOTR";
 
   const handleCreateRoom = async () => {
     if (roomName.trim().length < 3) return;
@@ -460,9 +460,7 @@ function CreateRoomModal({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="TicTacToe">Tic Tac Toe</option>
-              <option value="Chess">Chess</option>
-              <option value="Checkers">Checkers</option>
-              <option value="Connect4">Connect 4</option>
+              <option value="LOTR">The Lord of the Rings: Duel for Middle-earth</option>
             </select>
           </div>
 
@@ -484,7 +482,7 @@ function CreateRoomModal({
             </select>
             {maxPlayersLocked && (
               <p className="text-xs text-gray-500 mt-1">
-                Tic Tac Toe requires exactly 2 players
+                This game requires exactly 2 players
               </p>
             )}
           </div>
