@@ -76,9 +76,9 @@ export interface LotrGameState {
   currentChapter: number;
   currentTurnPlayer: LotrPlayerSide;
   cardSlots: LotrCardSlot[];
-  discardPile: string[];
   landmarkTiles: LotrLandmarkTileDef[];
-  allianceTokenStacks: Record<string, LotrAllianceTokenDef[]>;
+  allianceTokenCounts?: Record<string, number>;
+  allianceTokenStacks?: Record<string, LotrAllianceTokenDef[]>;
 }
 
 export interface LotrStateResponse {
