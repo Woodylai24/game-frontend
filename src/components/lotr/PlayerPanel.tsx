@@ -19,11 +19,16 @@ export default function PlayerPanel({ player, isCurrentTurn }: Props) {
     return COLOR_ORDER.indexOf(da.color) - COLOR_ORDER.indexOf(db.color);
   });
 
-  const greySkills: LotrSkill[][] = [];
+  const fixedSkills: LotrSkill[] = [];
+  const optionSkillGroups: LotrSkill[][] = [];
   for (const cardId of player.playedCardIds) {
     const def = getCardDef(cardId);
     if (def?.color === "GREY" && def.greySkills) {
-      greySkills.push(...def.greySkills);
+      if (def.greySkills.length === 1) {
+        fixedSkills.push(...def.greySkills[0]);
+      } else {
+        optionSkillGroups.push(def.greySkills.map(choice => choice[0]));
+      }
     }
   }
 
@@ -85,16 +90,25 @@ export default function PlayerPanel({ player, isCurrentTurn }: Props) {
         </div>
       </div>
 
-      {greySkills.length > 0 && (
+      {(fixedSkills.length > 0 || optionSkillGroups.length > 0) && (
         <div className="mt-2">
           <div className="text-[10px] text-gray-400 mb-1">Skills</div>
-          <div className="flex flex-wrap gap-1">
-            {greySkills.map((choice, ci) =>
-              choice.map((skill, si) => (
-                <img key={`${ci}-${si}`} src={getSkillIconPath(skill)} alt={skill}
-                  className="w-5 h-5 rounded" title={skill} />
-              ))
-            )}
+          <div className="flex flex-wrap gap-1 items-center">
+            {fixedSkills.map((skill, i) => (
+              <img key={`f-${i}`} src={getSkillIconPath(skill)} alt={skill}
+                className="w-5 h-5 rounded" title={skill} />
+            ))}
+            {optionSkillGroups.map((group, gi) => (
+              <div key={`o-${gi}`} className="flex items-center gap-0.5 bg-gray-700/50 rounded px-1 py-0.5">
+                {group.map((skill, si) => (
+                  <span key={si} className="flex items-center">
+                    {si > 0 && <span className="text-[10px] text-gray-400 mx-0.5">/</span>}
+                    <img src={getSkillIconPath(skill)} alt={skill}
+                      className="w-5 h-5 rounded" title={skill} />
+                  </span>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LotrCardSlot, LotrCardDef, LotrSkill, getCardImagePath, getCardBackPath, getSkillIconPath } from "@/types/lotr";
-import { getCardDef, getCardEffectText } from "@/lib/lotrCards";
+import { getCardDef, getCardEffectText, resolveSkillsWithOptions } from "@/lib/lotrCards";
 
 interface Props {
   cardSlots: LotrCardSlot[];
@@ -25,26 +25,11 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
     return def?.chainingSymbol === availableCard.chainCost;
   });
 
-  const skillMap: Record<string, number> = {};
-  for (const id of myPlayedCards) {
-    const def = getCardDef(id);
-    if (def?.color === "GREY" && def.greySkills) {
-      for (const choice of def.greySkills) {
-        for (const s of choice) skillMap[s] = (skillMap[s] || 0) + 1;
-      }
-    }
-  }
-
   const canAfford = (card: LotrCardDef) => {
     if (canChain) return true;
-    let coinsNeeded = card.coinCost;
-    const needed: Record<string, number> = {};
-    for (const s of card.skillCost) needed[s] = (needed[s] || 0) + 1;
-    for (const [s, count] of Object.entries(needed)) {
-      const have = skillMap[s] || 0;
-      if (have < count) coinsNeeded += count - have;
-    }
-    return myCoins >= coinsNeeded;
+    const resolved = resolveSkillsWithOptions(myPlayedCards, card.skillCost as LotrSkill[]);
+    const totalCoins = card.coinCost + resolved.totalCoinSubstitution;
+    return myCoins >= totalCoins;
   };
 
   const romanChapter = ["I", "II", "III"][currentChapter - 1];
@@ -97,7 +82,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
           card={availableCard}
           canChain={!!canChain}
           canAfford={canAfford(availableCard)}
-          skillMap={skillMap}
+          myPlayedCards={myPlayedCards}
           onClose={() => setSelectedSlot(null)}
           onConfirm={(playOrDiscard, region) => {
             onTakeCard(selectedSlot.id, playOrDiscard, region);
@@ -109,29 +94,20 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
   );
 }
 
-function CardActionModal({ card, canChain, canAfford, skillMap, onClose, onConfirm }: {
+function CardActionModal({ card, canChain, canAfford, myPlayedCards, onClose, onConfirm }: {
   card: LotrCardDef; canChain: boolean; canAfford: boolean;
-  skillMap: Record<string, number>;
+  myPlayedCards: string[];
   onClose: () => void; onConfirm: (playOrDiscard: "PLAY" | "DISCARD", region?: string) => void;
 }) {
   const [chosenRegion, setChosenRegion] = useState<string | undefined>(undefined);
 
   const needsRegion = card.color === "RED" && card.redBannerRegions && card.redBannerRegions.length > 1;
 
-  let coinsNeeded = card.coinCost;
-  const missingSkillFlags: boolean[] = [];
-  if (!canChain) {
-    const available = { ...skillMap };
-    for (const s of card.skillCost) {
-      if ((available[s] ?? 0) > 0) {
-        available[s]--;
-        missingSkillFlags.push(false);
-      } else {
-        coinsNeeded++;
-        missingSkillFlags.push(true);
-      }
-    }
-  }
+  const resolved = canChain
+    ? { covered: card.skillCost.map(() => true), totalCoinSubstitution: 0 }
+    : resolveSkillsWithOptions(myPlayedCards, card.skillCost as LotrSkill[]);
+
+  const coinsNeeded = card.coinCost + resolved.totalCoinSubstitution;
 
   const effectText = getCardEffectText(card);
 
@@ -152,9 +128,9 @@ function CardActionModal({ card, canChain, canAfford, skillMap, onClose, onConfi
                 {card.skillCost.length > 0 && (
                   <div className="flex gap-1 flex-wrap items-center mt-1">
                     Cost: {card.skillCost.map((s, i) => (
-                      <div key={i} className={`relative ${missingSkillFlags[i] ? "opacity-50" : ""}`}>
+                      <div key={i} className={`relative ${!resolved.covered[i] ? "opacity-50" : ""}`}>
                         <img src={getSkillIconPath(s as LotrSkill)} alt={s} className="w-6 h-6 rounded" />
-                        {missingSkillFlags[i] && (
+                        {!resolved.covered[i] && (
                           <div className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                             🪙
                           </div>

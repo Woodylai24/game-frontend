@@ -2,31 +2,26 @@
 
 import { useState } from "react";
 import { LotrLandmarkTileDef, LotrSkill, getLandmarkImagePath, getLandmarkBackPath, getSkillIconPath } from "@/types/lotr";
+import { resolveSkillsWithOptions } from "@/lib/lotrCards";
 
 interface Props {
   landmarks: LotrLandmarkTileDef[];
   isMyTurn: boolean;
   myCoins: number;
-  mySkills: Record<string, number>;
+  myPlayedCards: string[];
   fortressCount: number;
   onTakeLandmark: (tileId: string) => void;
 }
 
-export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, mySkills, fortressCount, onTakeLandmark }: Props) {
+export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCards, fortressCount, onTakeLandmark }: Props) {
   const [selectedTile, setSelectedTile] = useState<LotrLandmarkTileDef | null>(null);
 
   const faceUpTiles = landmarks.filter(t => t.faceUp);
   const faceDownCount = landmarks.filter(t => !t.faceUp).length;
 
   const getCoinCost = (tile: LotrLandmarkTileDef) => {
-    let coinsNeeded = fortressCount;
-    const needed: Record<string, number> = {};
-    for (const s of tile.skillCost) needed[s] = (needed[s] || 0) + 1;
-    for (const [s, count] of Object.entries(needed)) {
-      const have = mySkills[s] || 0;
-      if (have < count) coinsNeeded += count - have;
-    }
-    return coinsNeeded;
+    const resolved = resolveSkillsWithOptions(myPlayedCards, tile.skillCost as LotrSkill[]);
+    return fortressCount + resolved.totalCoinSubstitution;
   };
 
   const canAfford = (tile: LotrLandmarkTileDef) => {
@@ -62,7 +57,7 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, mySkills, 
       {selectedTile && (
         <LandmarkModal
           tile={selectedTile}
-          mySkills={mySkills}
+          myPlayedCards={myPlayedCards}
           fortressCount={fortressCount}
           canAfford={canAfford(selectedTile)}
           coinCost={getCoinCost(selectedTile)}
@@ -77,18 +72,16 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, mySkills, 
   );
 }
 
-function LandmarkModal({ tile, mySkills, fortressCount, canAfford, coinCost, onClose, onTake }: {
+function LandmarkModal({ tile, myPlayedCards, fortressCount, canAfford, coinCost, onClose, onTake }: {
   tile: LotrLandmarkTileDef;
-  mySkills: Record<string, number>;
+  myPlayedCards: string[];
   fortressCount: number;
   canAfford: boolean;
   coinCost: number;
   onClose: () => void;
   onTake: () => void;
 }) {
-  // Build missingSkills array: for each skill in cost, consume available skills
-  // and mark positions that need coin substitution
-  const missingSkills = getMissingSkills(tile.skillCost, mySkills);
+  const resolved = resolveSkillsWithOptions(myPlayedCards, tile.skillCost as LotrSkill[]);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
@@ -103,10 +96,10 @@ function LandmarkModal({ tile, mySkills, fortressCount, canAfford, coinCost, onC
           <div className="text-xs text-gray-400 mb-1">Cost:</div>
           <div className="flex items-center gap-2 flex-wrap">
             {tile.skillCost.map((s, i) => (
-                <div key={i} className={`relative ${missingSkills[i] ? "opacity-50" : ""}`}>
+                <div key={i} className={`relative ${!resolved.covered[i] ? "opacity-50" : ""}`}>
                   <img src={getSkillIconPath(s as LotrSkill)} alt={s}
                     className="w-8 h-8 rounded" />
-                  {missingSkills[i] && (
+                  {!resolved.covered[i] && (
                     <div className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                       🪙
                     </div>
@@ -142,24 +135,4 @@ function LandmarkModal({ tile, mySkills, fortressCount, canAfford, coinCost, onC
       </div>
     </div>
   );
-}
-
-/**
- * For each skill in the cost list, consume available player skills.
- * Returns a boolean array — true if that specific position needs coin substitution.
- * This also works as a foundation for grey card A/B choices later:
- * just call with the optimal skill allocation for the chosen option.
- */
-function getMissingSkills(
-  skillCost: LotrSkill[],
-  mySkills: Record<string, number>,
-): boolean[] {
-  const available = { ...mySkills };
-  return skillCost.map(skill => {
-    if ((available[skill] ?? 0) > 0) {
-      available[skill]--;
-      return false;
-    }
-    return true;
-  });
 }

@@ -1,5 +1,57 @@
 import { LotrCardDef, LotrSkill, LotrCardColor, LotrRace, LotrRegion, LotrManeuverType } from "@/types/lotr";
 
+export interface ResolvedSkillCoverage {
+  covered: boolean[];
+  totalCoinSubstitution: number;
+}
+
+export function resolveSkillsWithOptions(
+  playedCardIds: string[],
+  costSkills: LotrSkill[]
+): ResolvedSkillCoverage {
+  const fixedSkills: Record<string, number> = {};
+  const optionCards: LotrSkill[][] = [];
+
+  for (const cardId of playedCardIds) {
+    const def = getCardDef(cardId);
+    if (def?.color === "GREY" && def.greySkills) {
+      if (def.greySkills.length === 1) {
+        for (const s of def.greySkills[0]) {
+          fixedSkills[s] = (fixedSkills[s] || 0) + 1;
+        }
+      } else {
+        optionCards.push(def.greySkills.map(choice => choice[0]));
+      }
+    }
+  }
+
+  const available = { ...fixedSkills };
+  const covered: boolean[] = [];
+
+  for (const skill of costSkills) {
+    if ((available[skill] ?? 0) > 0) {
+      available[skill]--;
+      covered.push(true);
+    } else {
+      let matched = false;
+      for (let i = 0; i < optionCards.length; i++) {
+        if (optionCards[i].includes(skill)) {
+          optionCards.splice(i, 1);
+          covered.push(true);
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        covered.push(false);
+      }
+    }
+  }
+
+  const totalCoinSubstitution = covered.filter(c => !c).length;
+  return { covered, totalCoinSubstitution };
+}
+
 type CD = LotrCardDef;
 
 function c(id: string, name: string, ch: number, color: LotrCardColor,

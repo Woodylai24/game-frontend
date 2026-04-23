@@ -1,7 +1,6 @@
 "use client";
 
 import { LotrGameState, LotrPlayerSide } from "@/types/lotr";
-import { getCardDef } from "@/lib/lotrCards";
 import RegionMap from "./RegionMap";
 import QuestTrack from "./QuestTrack";
 import PlayerPanel from "./PlayerPanel";
@@ -22,22 +21,11 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
   const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
 
-  const mySkills: Record<string, number> = {};
-  if (me) {
-    for (const id of (me.playedCardIds || [])) {
-      const def = getCardDef(id);
-      if (def?.color === "GREY" && def.greySkills) {
-        for (const choice of def.greySkills) {
-          for (const s of choice) mySkills[s] = (mySkills[s] || 0) + 1;
-        }
-      }
-    }
-  }
+  const myPlayedCards = me?.playedCardIds ?? [];
 
   const fortressCount = (state.regions || []).filter(r => r.fortress === mySide).length;
   const isFinished = gameStatus === "FINISHED";
 
-  // Derive winner from game state when finished
   let winnerSide: LotrPlayerSide | undefined;
   let isDraw = false;
   if (isFinished && state.questTrack) {
@@ -46,17 +34,14 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
     } else if (state.questTrack.sauronPosition >= 14) {
       winnerSide = "SAURON";
     } else {
-      // Check race symbols
       for (const side of ["FELLOWSHIP", "SAURON"] as const) {
         const p = state[side.toLowerCase() as "fellowship" | "sauron"];
         const raceCount = Object.values(p.raceSymbols).filter(v => v > 0).length;
         if (p.allianceTokenIds.includes("AT-HOBBITS-1")) {
-          // Hobbits alliance counts as a race
         }
         if (raceCount >= 6) winnerSide = side;
       }
       if (!winnerSide) {
-        // Check regions
         const countRegions = (side: LotrPlayerSide) =>
           state.regions.filter(r => r.fortress === side || (side === "FELLOWSHIP" ? r.units > 0 : r.units < 0)).length;
         const fRegions = countRegions("FELLOWSHIP");
@@ -98,7 +83,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
             landmarks={state.landmarkTiles}
             isMyTurn={isMyTurn}
             myCoins={me?.coins ?? 0}
-            mySkills={mySkills}
+            myPlayedCards={myPlayedCards}
             fortressCount={fortressCount}
             onTakeLandmark={onTakeLandmark}
           />
@@ -108,7 +93,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
             currentChapter={state.currentChapter}
             isMyTurn={isMyTurn}
             onTakeCard={onTakeCard}
-            myPlayedCards={me?.playedCardIds ?? []}
+            myPlayedCards={myPlayedCards}
             myCoins={me?.coins ?? 0}
           />
         </div>
