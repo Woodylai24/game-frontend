@@ -191,7 +191,7 @@ function CardActionModal({ card, canChain, canAfford, skillMap, onClose, onConfi
 
         <div className="flex gap-2">
           <button onClick={() => onConfirm("PLAY", chosenRegion)}
-            disabled={!canAfford || (needsRegion && !chosenRegion)}
+            disabled={(!canAfford && !canChain) || (needsRegion && !chosenRegion)}
             className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-2 rounded font-bold text-sm">
             Play {!canAfford ? "(can't afford)" : canChain ? "(Free!)" : `(${coinsNeeded} 🪙)`}
           </button>

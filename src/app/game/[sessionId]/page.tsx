@@ -110,7 +110,7 @@ export default function GamePage() {
           break;
         case "game_ended":
           setSessionData((prev) =>
-            prev ? { ...prev, board: event.board, gameStatus: event.gameStatus as GameSessionData["gameStatus"], winnerUsername: event.winnerUsername, players: event.gameSession.players } : prev,
+            prev ? { ...prev, gameStatus: event.gameStatus as GameSessionData["gameStatus"], winnerUsername: event.winnerUsername, ...(event.gameSession ? { players: event.gameSession.players } : {}) } : prev,
           );
           break;
         case "return_to_lobby":
@@ -162,11 +162,20 @@ export default function GamePage() {
   }
 
   if (gameType === "LOTR" && lotr.lotrState) {
+    const isLotrFinished = lotr.gameStatus === "FINISHED";
     return (
       <div className="min-h-screen bg-gray-950">
         {lotr.error && (
           <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm z-50 shadow-lg">
             {lotr.error}
+          </div>
+        )}
+        {isLotrFinished && (
+          <div className="fixed top-4 right-4 z-50">
+            <button onClick={handleBackToRoom}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-lg">
+              Back to Room
+            </button>
           </div>
         )}
         <LotrGameBoard
