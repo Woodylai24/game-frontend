@@ -185,6 +185,9 @@ export default function GamePage() {
           gameStatus={lotr.gameStatus}
           onTakeCard={lotr.takeCard}
           onTakeLandmark={lotr.takeLandmark}
+          isManeuverPhase={lotr.isManeuverPhase}
+          pendingManeuvers={lotr.lotrState?.pendingManeuvers ?? []}
+          onResolveManeuver={lotr.resolveManeuver}
         />
       </div>
     );

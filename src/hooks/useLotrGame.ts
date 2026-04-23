@@ -93,6 +93,30 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
 
   const mySide = players.find(p => p.username === username)?.side as "FELLOWSHIP" | "SAURON" | undefined;
   const isMyTurn = lotrState?.currentTurnPlayer === mySide;
+  const isManeuverPhase = lotrState?.maneuverPhase === true && lotrState?.maneuverPlayer === mySide;
 
-  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, takeCard, takeLandmark, setError };
+  const resolveManeuver = useCallback(async (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => {
+    try {
+      const body: Record<string, unknown> = { maneuverType };
+      if (targetRegion) body.targetRegion = targetRegion;
+      if (fromRegion) body.fromRegion = fromRegion;
+      if (toRegion) body.toRegion = toRegion;
+      const res = await apiFetch(`/api/game-sessions/${sessionId}/lotr/resolve-maneuver`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Action failed" }));
+        throw new Error(err.error || "Action failed");
+      }
+      const data: LotrStateResponse = await res.json();
+      setLotrState(data.parsedState);
+      setGameStatus(data.gameStatus);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Action failed");
+      setTimeout(() => setError(""), 3000);
+    }
+  }, [sessionId]);
+
+  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, takeCard, takeLandmark, resolveManeuver, setError };
 }

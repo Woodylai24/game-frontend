@@ -1,9 +1,14 @@
 "use client";
 
-import { LotrRegionState, LotrRegion, REGION_ADJACENCY, REGION_POSITIONS, getRegionIconPath } from "@/types/lotr";
+import { useState } from "react";
+import { LotrRegionState, LotrPlayerSide, LotrRegion, LotrManeuverType, REGION_ADJACENCY, REGION_POSITIONS, getRegionIconPath } from "@/types/lotr";
 
 interface Props {
   regions: LotrRegionState[];
+  mySide?: LotrPlayerSide;
+  isManeuverPhase?: boolean;
+  pendingManeuvers?: LotrManeuverType[];
+  onResolveManeuver?: (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => void;
 }
 
 const REGION_LABELS: Record<LotrRegion, string> = {
@@ -11,8 +16,58 @@ const REGION_LABELS: Record<LotrRegion, string> = {
   ENEDWAITH: "Enedwaith", ROHAN: "Rohan", GONDOR: "Gondor", MORDOR: "Mordor",
 };
 
-export default function RegionMap({ regions }: Props) {
+export default function RegionMap({ regions, mySide, isManeuverPhase, pendingManeuvers, onResolveManeuver }: Props) {
+  const [selectedFromRegion, setSelectedFromRegion] = useState<LotrRegion | null>(null);
+
   const getRegionState = (r: LotrRegion) => regions.find(rs => rs.region === r);
+
+  const hasRemoveEnemy = pendingManeuvers?.includes("REMOVE_ENEMY_UNIT") ?? false;
+  const hasMoveUnit = pendingManeuvers?.includes("MOVE_UNIT") ?? false;
+
+  const isClickableForRemove = (state: LotrRegionState | undefined) => {
+    if (!state || !mySide) return false;
+    return mySide === "FELLOWSHIP" ? state.units < 0 : state.units > 0;
+  };
+
+  const isClickableForMove = (state: LotrRegionState | undefined) => {
+    if (!state || !mySide) return false;
+    return mySide === "FELLOWSHIP" ? state.units > 0 : state.units < 0;
+  };
+
+  const handleRegionClick = (region: LotrRegion) => {
+    if (!isManeuverPhase || !onResolveManeuver || !mySide) return;
+
+    const state = getRegionState(region);
+    if (!state) return;
+
+    if (selectedFromRegion) {
+      if (selectedFromRegion === region) {
+        setSelectedFromRegion(null);
+        return;
+      }
+      const adj = REGION_ADJACENCY[selectedFromRegion];
+      if (adj?.includes(region)) {
+        onResolveManeuver("MOVE_UNIT", undefined, selectedFromRegion, region);
+        setSelectedFromRegion(null);
+      }
+      return;
+    }
+
+    if (hasRemoveEnemy && isClickableForRemove(state)) {
+      onResolveManeuver("REMOVE_ENEMY_UNIT", region);
+      return;
+    }
+
+    if (hasMoveUnit && isClickableForMove(state)) {
+      setSelectedFromRegion(region);
+      return;
+    }
+  };
+
+  const isAdjacentToSelected = (region: LotrRegion) => {
+    if (!selectedFromRegion) return false;
+    return REGION_ADJACENCY[selectedFromRegion]?.includes(region) ?? false;
+  };
 
   return (
     <div className="relative w-full" style={{ paddingBottom: "60%" }}>
@@ -22,9 +77,14 @@ export default function RegionMap({ regions }: Props) {
             const p1 = REGION_POSITIONS[from as LotrRegion];
             const p2 = REGION_POSITIONS[to as LotrRegion];
             const key = [from, to].sort().join("-");
+            const isHighlightLine = selectedFromRegion &&
+              ((from === selectedFromRegion && adj.includes(to as LotrRegion) && to === REGION_ADJACENCY[selectedFromRegion]?.find(r => r === to)) ||
+               (to === selectedFromRegion && from === REGION_ADJACENCY[selectedFromRegion]?.find(r => r === from)));
             return (
               <line key={key} x1={p1.x} y1={p1.y} x2={p2.x} y2={p2.y}
-                stroke="#94a3b8" strokeWidth="0.5" strokeDasharray="2,2" />
+                stroke={isHighlightLine ? "#a855f7" : "#94a3b8"}
+                strokeWidth={isHighlightLine ? "1" : "0.5"}
+                strokeDasharray={isHighlightLine ? "none" : "2,2"} />
             );
           })
         )}
@@ -35,9 +95,22 @@ export default function RegionMap({ regions }: Props) {
           const sauronUnits = Math.max(0, -(state?.units ?? 0));
           const fortressOwner = state?.fortress;
 
+          const isRemoveTarget = isManeuverPhase && hasRemoveEnemy && isClickableForRemove(state);
+          const isMoveSource = isManeuverPhase && hasMoveUnit && isClickableForMove(state) && !selectedFromRegion;
+          const isSelected = selectedFromRegion === region;
+          const isMoveTarget = isAdjacentToSelected(region);
+
+          const isClickable = isRemoveTarget || isMoveSource || isMoveTarget || isSelected;
+          const highlightColor = isSelected ? "#a855f7" : isRemoveTarget ? "#ef4444" : isMoveSource || isMoveTarget ? "#3b82f6" : null;
+
           return (
-            <g key={region}>
-              <circle cx={pos.x} cy={pos.y} r="7" fill="#1e293b" stroke="#475569" strokeWidth="0.5" />
+            <g key={region}
+              onClick={() => handleRegionClick(region)}
+              style={isClickable ? { cursor: "pointer" } : undefined}>
+              <circle cx={pos.x} cy={pos.y} r="7"
+                fill={isSelected ? "#7c3aed" : highlightColor ? `${highlightColor}33` : "#1e293b"}
+                stroke={highlightColor || (isSelected ? "#a855f7" : "#475569")}
+                strokeWidth={highlightColor || isSelected ? "1.5" : "0.5"} />
               <image href={getRegionIconPath(region)}
                 x={pos.x - 5} y={pos.y - 5}
                 width="10" height="10"
@@ -69,6 +142,14 @@ export default function RegionMap({ regions }: Props) {
           );
         })}
       </svg>
+      {selectedFromRegion && (
+        <div className="absolute top-2 right-2">
+          <button onClick={() => setSelectedFromRegion(null)}
+            className="bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold border border-gray-600">
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 }

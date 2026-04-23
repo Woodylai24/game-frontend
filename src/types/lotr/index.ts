@@ -79,6 +79,9 @@ export interface LotrGameState {
   landmarkTiles: LotrLandmarkTileDef[];
   allianceTokenCounts?: Record<string, number>;
   allianceTokenStacks?: Record<string, LotrAllianceTokenDef[]>;
+  maneuverPhase?: boolean;
+  pendingManeuvers?: LotrManeuverType[];
+  maneuverPlayer?: LotrPlayerSide | null;
 }
 
 export interface LotrStateResponse {

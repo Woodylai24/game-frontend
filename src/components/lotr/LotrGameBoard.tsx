@@ -1,12 +1,13 @@
 "use client";
 
-import { LotrGameState, LotrPlayerSide } from "@/types/lotr";
+import { LotrGameState, LotrPlayerSide, LotrManeuverType } from "@/types/lotr";
 import RegionMap from "./RegionMap";
 import QuestTrack from "./QuestTrack";
 import PlayerPanel from "./PlayerPanel";
 import CardPyramid from "./CardPyramid";
 import LandmarkTiles from "./LandmarkTiles";
 import InfoBar from "./InfoBar";
+import ManeuverPanel from "./ManeuverPanel";
 
 interface Props {
   state: LotrGameState;
@@ -15,9 +16,12 @@ interface Props {
   gameStatus: string;
   onTakeCard: (slotId: number, playOrDiscard: "PLAY" | "DISCARD", chosenRegion?: string) => void;
   onTakeLandmark: (tileId: string) => void;
+  isManeuverPhase: boolean;
+  pendingManeuvers: LotrManeuverType[];
+  onResolveManeuver: (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => void;
 }
 
-export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark }: Props) {
+export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver }: Props) {
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
   const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
 
@@ -65,6 +69,15 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         mySide={mySide}
       />
 
+      {isManeuverPhase && (
+        <div className="px-3 pt-3">
+          <ManeuverPanel
+            pendingManeuvers={pendingManeuvers}
+            onSkip={() => onResolveManeuver("SKIP")}
+          />
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 overflow-auto">
         <div className="lg:w-48 flex-shrink-0 space-y-3">
           {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} />}
@@ -74,28 +87,38 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         <div className="flex-1 flex flex-col gap-3 min-w-0">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="bg-gray-800 rounded-lg p-3">
-              <RegionMap regions={state.regions} />
+              <RegionMap
+                regions={state.regions}
+                mySide={mySide}
+                isManeuverPhase={isManeuverPhase}
+                pendingManeuvers={pendingManeuvers}
+                onResolveManeuver={onResolveManeuver}
+              />
             </div>
             <QuestTrack questTrack={state.questTrack} />
           </div>
 
-          <LandmarkTiles
-            landmarks={state.landmarkTiles}
-            isMyTurn={isMyTurn}
-            myCoins={me?.coins ?? 0}
-            myPlayedCards={myPlayedCards}
-            fortressCount={fortressCount}
-            onTakeLandmark={onTakeLandmark}
-          />
+          {!isManeuverPhase && (
+            <LandmarkTiles
+              landmarks={state.landmarkTiles}
+              isMyTurn={isMyTurn}
+              myCoins={me?.coins ?? 0}
+              myPlayedCards={myPlayedCards}
+              fortressCount={fortressCount}
+              onTakeLandmark={onTakeLandmark}
+            />
+          )}
 
-          <CardPyramid
-            cardSlots={state.cardSlots}
-            currentChapter={state.currentChapter}
-            isMyTurn={isMyTurn}
-            onTakeCard={onTakeCard}
-            myPlayedCards={myPlayedCards}
-            myCoins={me?.coins ?? 0}
-          />
+          {!isManeuverPhase && (
+            <CardPyramid
+              cardSlots={state.cardSlots}
+              currentChapter={state.currentChapter}
+              isMyTurn={isMyTurn}
+              onTakeCard={onTakeCard}
+              myPlayedCards={myPlayedCards}
+              myCoins={me?.coins ?? 0}
+            />
+          )}
         </div>
       </div>
     </div>
