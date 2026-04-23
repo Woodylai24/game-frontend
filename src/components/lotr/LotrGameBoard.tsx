@@ -98,27 +98,23 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
             <QuestTrack questTrack={state.questTrack} />
           </div>
 
-          {!isManeuverPhase && (
-            <LandmarkTiles
-              landmarks={state.landmarkTiles}
-              isMyTurn={isMyTurn}
-              myCoins={me?.coins ?? 0}
-              myPlayedCards={myPlayedCards}
-              fortressCount={fortressCount}
-              onTakeLandmark={onTakeLandmark}
-            />
-          )}
+          <LandmarkTiles
+            landmarks={state.landmarkTiles}
+            isMyTurn={!isManeuverPhase && isMyTurn}
+            myCoins={me?.coins ?? 0}
+            myPlayedCards={myPlayedCards}
+            fortressCount={fortressCount}
+            onTakeLandmark={onTakeLandmark}
+          />
 
-          {!isManeuverPhase && (
-            <CardPyramid
-              cardSlots={state.cardSlots}
-              currentChapter={state.currentChapter}
-              isMyTurn={isMyTurn}
-              onTakeCard={onTakeCard}
-              myPlayedCards={myPlayedCards}
-              myCoins={me?.coins ?? 0}
-            />
-          )}
+          <CardPyramid
+            cardSlots={state.cardSlots}
+            currentChapter={state.currentChapter}
+            isMyTurn={!isManeuverPhase && isMyTurn}
+            onTakeCard={onTakeCard}
+            myPlayedCards={myPlayedCards}
+            myCoins={me?.coins ?? 0}
+          />
         </div>
       </div>
     </div>

@@ -18,6 +18,8 @@ const REGION_LABELS: Record<LotrRegion, string> = {
 
 export default function RegionMap({ regions, mySide, isManeuverPhase, pendingManeuvers, onResolveManeuver }: Props) {
   const [selectedFromRegion, setSelectedFromRegion] = useState<LotrRegion | null>(null);
+  const [selectedToRegion, setSelectedToRegion] = useState<LotrRegion | null>(null);
+  const [pendingRemoveRegion, setPendingRemoveRegion] = useState<LotrRegion | null>(null);
 
   const getRegionState = (r: LotrRegion) => regions.find(rs => rs.region === r);
 
@@ -34,27 +36,36 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
     return mySide === "FELLOWSHIP" ? state.units > 0 : state.units < 0;
   };
 
+  const clearAll = () => {
+    setSelectedFromRegion(null);
+    setSelectedToRegion(null);
+    setPendingRemoveRegion(null);
+  };
+
   const handleRegionClick = (region: LotrRegion) => {
     if (!isManeuverPhase || !onResolveManeuver || !mySide) return;
 
     const state = getRegionState(region);
     if (!state) return;
 
-    if (selectedFromRegion) {
+    // If selecting move destination
+    if (selectedFromRegion && !selectedToRegion) {
       if (selectedFromRegion === region) {
         setSelectedFromRegion(null);
         return;
       }
       const adj = REGION_ADJACENCY[selectedFromRegion];
       if (adj?.includes(region)) {
-        onResolveManeuver("MOVE_UNIT", undefined, selectedFromRegion, region);
-        setSelectedFromRegion(null);
+        setSelectedToRegion(region);
       }
       return;
     }
 
+    // Don't allow new selections while confirmation is pending
+    if (pendingRemoveRegion || selectedToRegion) return;
+
     if (hasRemoveEnemy && isClickableForRemove(state)) {
-      onResolveManeuver("REMOVE_ENEMY_UNIT", region);
+      setPendingRemoveRegion(region);
       return;
     }
 
@@ -96,19 +107,23 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
           const fortressOwner = state?.fortress;
 
           const isRemoveTarget = isManeuverPhase && hasRemoveEnemy && isClickableForRemove(state);
-          const isMoveSource = isManeuverPhase && hasMoveUnit && isClickableForMove(state) && !selectedFromRegion;
+          const isMoveSource = isManeuverPhase && hasMoveUnit && isClickableForMove(state) && !selectedFromRegion && !pendingRemoveRegion;
           const isSelected = selectedFromRegion === region;
-          const isMoveTarget = isAdjacentToSelected(region);
+          const isMoveTarget = selectedFromRegion && !selectedToRegion && isAdjacentToSelected(region);
 
           const isClickable = isRemoveTarget || isMoveSource || isMoveTarget || isSelected;
-          const highlightColor = isSelected ? "#a855f7" : isRemoveTarget ? "#ef4444" : isMoveSource || isMoveTarget ? "#3b82f6" : null;
+          const highlightColor = isSelected || selectedToRegion === region ? "#a855f7"
+            : pendingRemoveRegion === region ? "#ef4444"
+            : isRemoveTarget ? "#ef4444"
+            : isMoveSource || isMoveTarget ? "#3b82f6"
+            : null;
 
           return (
             <g key={region}
               onClick={() => handleRegionClick(region)}
               style={isClickable ? { cursor: "pointer" } : undefined}>
               <circle cx={pos.x} cy={pos.y} r="7"
-                fill={isSelected ? "#7c3aed" : highlightColor ? `${highlightColor}33` : "#1e293b"}
+                fill={isSelected || selectedToRegion === region ? "#7c3aed" : highlightColor ? `${highlightColor}33` : "#1e293b"}
                 stroke={highlightColor || (isSelected ? "#a855f7" : "#475569")}
                 strokeWidth={highlightColor || isSelected ? "1.5" : "0.5"} />
               <image href={getRegionIconPath(region)}
@@ -142,9 +157,51 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
           );
         })}
       </svg>
-      {selectedFromRegion && (
+
+      {/* Remove enemy unit confirmation */}
+      {pendingRemoveRegion && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 shadow-lg">
+          <span className="text-xs text-white">
+            Remove enemy unit from <strong>{REGION_LABELS[pendingRemoveRegion]}</strong>?
+          </span>
+          <button onClick={() => {
+            onResolveManeuver!("REMOVE_ENEMY_UNIT", pendingRemoveRegion);
+            setPendingRemoveRegion(null);
+          }}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold">
+            Remove
+          </button>
+          <button onClick={() => setPendingRemoveRegion(null)}
+            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs font-bold">
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Move unit confirmation */}
+      {selectedFromRegion && selectedToRegion && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 shadow-lg">
+          <span className="text-xs text-white">
+            Move unit <strong>{REGION_LABELS[selectedFromRegion]}</strong> → <strong>{REGION_LABELS[selectedToRegion]}</strong>?
+          </span>
+          <button onClick={() => {
+            onResolveManeuver!("MOVE_UNIT", undefined, selectedFromRegion, selectedToRegion);
+            clearAll();
+          }}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold">
+            Move
+          </button>
+          <button onClick={clearAll}
+            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs font-bold">
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Cancel move source selection */}
+      {selectedFromRegion && !selectedToRegion && (
         <div className="absolute top-2 right-2">
-          <button onClick={() => setSelectedFromRegion(null)}
+          <button onClick={clearAll}
             className="bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold border border-gray-600">
             Cancel
           </button>
