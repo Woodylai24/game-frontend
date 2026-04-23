@@ -163,11 +163,7 @@ function CardActionModal({ card, canChain, canAfford, skillMap, onClose, onConfi
                     ))}
                   </div>
                 )}
-                {missingSkillFlags.some(Boolean) && (
-                  <div className="text-yellow-400 text-[10px] mt-1">
-                    Missing skills: 🪙 {missingSkillFlags.filter(Boolean).length} substitution coin(s)
-                  </div>
-                )}
+
                 {coinsNeeded > 0 && <div className="text-xs mt-1">Total: 🪙 {coinsNeeded}</div>}
               </div>
             )}
