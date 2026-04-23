@@ -37,6 +37,37 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
   const fortressCount = (state.regions || []).filter(r => r.fortress === mySide).length;
   const isFinished = gameStatus === "FINISHED";
 
+  // Derive winner from game state when finished
+  let winnerSide: LotrPlayerSide | undefined;
+  let isDraw = false;
+  if (isFinished && state.questTrack) {
+    if (state.questTrack.fellowshipPosition >= 14) {
+      winnerSide = "FELLOWSHIP";
+    } else if (state.questTrack.sauronPosition >= 14) {
+      winnerSide = "SAURON";
+    } else {
+      // Check race symbols
+      for (const side of ["FELLOWSHIP", "SAURON"] as const) {
+        const p = state[side.toLowerCase() as "fellowship" | "sauron"];
+        const raceCount = Object.values(p.raceSymbols).filter(v => v > 0).length;
+        if (p.allianceTokenIds.includes("AT-HOBBITS-1")) {
+          // Hobbits alliance counts as a race
+        }
+        if (raceCount >= 6) winnerSide = side;
+      }
+      if (!winnerSide) {
+        // Check regions
+        const countRegions = (side: LotrPlayerSide) =>
+          state.regions.filter(r => r.fortress === side || (side === "FELLOWSHIP" ? r.units > 0 : r.units < 0)).length;
+        const fRegions = countRegions("FELLOWSHIP");
+        const sRegions = countRegions("SAURON");
+        if (fRegions > sRegions) winnerSide = "FELLOWSHIP";
+        else if (sRegions > fRegions) winnerSide = "SAURON";
+        else isDraw = true;
+      }
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
       <InfoBar
@@ -44,8 +75,8 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         currentTurnPlayer={state.currentTurnPlayer}
         isMyTurn={isMyTurn}
         isFinished={isFinished}
-        isDraw={isFinished && false}
-        winnerSide={undefined}
+        isDraw={isDraw}
+        winnerSide={winnerSide}
         mySide={mySide}
       />
 

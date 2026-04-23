@@ -13,12 +13,12 @@ interface Props {
 }
 
 export default function InfoBar({ currentChapter, currentTurnPlayer, isMyTurn, isFinished, isDraw, winnerSide, mySide }: Props) {
-  const roman = ["I", "II", "III"][currentChapter - 1] || "?";
+  const chapterLabel = currentChapter > 3 ? "Game Finished" : `Chapter ${["I", "II", "III"][currentChapter - 1] || "?"}`;
 
   return (
     <div className="bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <div className="text-yellow-400 font-bold text-sm">Chapter {roman}</div>
+        <div className="text-yellow-400 font-bold text-sm">{chapterLabel}</div>
         {isFinished ? (
           <div className="text-sm font-bold">
             {isDraw ? (
