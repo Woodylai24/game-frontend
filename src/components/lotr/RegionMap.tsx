@@ -1,6 +1,6 @@
 "use client";
 
-import { LotrRegionState, LotrPlayerSide, LotrRegion, REGION_ADJACENCY, REGION_POSITIONS } from "@/types/lotr";
+import { LotrRegionState, LotrRegion, REGION_ADJACENCY, REGION_POSITIONS, getRegionIconPath } from "@/types/lotr";
 
 interface Props {
   regions: LotrRegionState[];
@@ -38,6 +38,10 @@ export default function RegionMap({ regions }: Props) {
           return (
             <g key={region}>
               <circle cx={pos.x} cy={pos.y} r="7" fill="#1e293b" stroke="#475569" strokeWidth="0.5" />
+              <image href={getRegionIconPath(region)}
+                x={pos.x - 5} y={pos.y - 5}
+                width="10" height="10"
+                opacity="0.3" preserveAspectRatio="xMidYMid slice" />
               {fortressOwner && (
                 <rect x={pos.x - 3} y={pos.y - 10} width="6" height="5" rx="1"
                   fill={fortressOwner === "FELLOWSHIP" ? "#3b82f6" : "#ef4444"} />

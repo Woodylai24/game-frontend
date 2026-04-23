@@ -167,3 +167,23 @@ export function getLandmarkImagePath(tileId: string): string {
   const num = tileId.replace("LM-0", "");
   return `/lotr/Landmarks/${num}.png`;
 }
+
+export function getSkillIconPath(skill: LotrSkill): string {
+  return `/lotr/Icons/Skills/${skill.charAt(0) + skill.slice(1).toLowerCase()}.png`;
+}
+
+export function getRaceIconPath(race: LotrRace): string {
+  const map: Record<LotrRace, string> = {
+    ELVES: "Elves", ENTS: "Ents", HOBBITS: "Hobbits",
+    HUMANS: "Humans", DWARVES: "Dwarves", WIZARDS: "Wizards"
+  };
+  return `/lotr/Icons/Races/${map[race]}.png`;
+}
+
+export function getRegionIconPath(region: LotrRegion): string {
+  return `/lotr/Icons/Regions/${region.charAt(0) + region.slice(1).toLowerCase()}.png`;
+}
+
+export function getLandmarkBackPath(): string {
+  return `/lotr/Landmarks/back.png`;
+}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { LotrCardSlot, LotrGameState, LotrCardDef, CARD_COLOR_BG, CARD_COLOR_TEXT, SKILL_ABBR, SKILL_COLOR, getCardImagePath, getCardBackPath } from "@/types/lotr";
-import { getCardDef } from "@/lib/lotrCards";
+import { LotrCardSlot, LotrCardDef, LotrSkill, getCardImagePath, getCardBackPath, getSkillIconPath } from "@/types/lotr";
+import { getCardDef, getCardEffectText } from "@/lib/lotrCards";
 
 interface Props {
   cardSlots: LotrCardSlot[];
@@ -59,12 +59,11 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
         {rows.map((row, ri) => (
           <div key={ri}
             className="flex gap-1 justify-center"
-            style={rows[ri].halfOffset ? { paddingLeft: '70px', paddingRight: '0px' } : undefined}
+            style={rows[ri].halfOffset ? { paddingLeft: '140px', paddingRight: '0px' } : undefined}
           >
             {row.slots.map((slot, si) => {
               if (!slot) {
-                // Gap spacer for diamond
-                return <div key={`gap-${ri}-${si}`} className="w-[60px] h-[90px] sm:w-[70px] sm:h-[105px]" />;
+                return <div key={`gap-${ri}-${si}`} className="w-[120px] h-[180px] sm:w-[140px] sm:h-[210px]" />;
               }
               const isAvailable = slot.cardDefId && slot.coveredBy.length === 0;
               const card = slot.cardDefId ? getCardDef(slot.cardDefId) : null;
@@ -74,7 +73,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                   key={slot.id}
                   onClick={() => isAvailable && isMyTurn && setSelectedSlot(slot)}
                   disabled={!isAvailable || !isMyTurn}
-                  className={`w-[60px] h-[90px] sm:w-[70px] sm:h-[105px] rounded border-2 text-[8px] sm:text-[10px] transition-all overflow-hidden relative
+                  className={`w-[120px] h-[180px] sm:w-[140px] sm:h-[210px] rounded border-2 text-[8px] sm:text-[10px] transition-all overflow-hidden relative
                     ${!slot.cardDefId ? "border-gray-700 bg-gray-700/30 opacity-30" :
                       !slot.faceUp ? "border-gray-600 bg-gray-700" :
                       isAvailable && isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
@@ -96,11 +95,9 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
       {selectedSlot && availableCard && (
         <CardActionModal
           card={availableCard}
-          slot={selectedSlot}
           canChain={!!canChain}
           canAfford={canAfford(availableCard)}
           skillMap={skillMap}
-          myCoins={myCoins}
           onClose={() => setSelectedSlot(null)}
           onConfirm={(playOrDiscard, region) => {
             onTakeCard(selectedSlot.id, playOrDiscard, region);
@@ -112,18 +109,17 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
   );
 }
 
-function CardActionModal({ card, slot, canChain, canAfford, skillMap, myCoins, onClose, onConfirm }: {
-  card: LotrCardDef; slot: LotrCardSlot; canChain: boolean; canAfford: boolean;
-  skillMap: Record<string, number>; myCoins: number;
+function CardActionModal({ card, canChain, canAfford, skillMap, onClose, onConfirm }: {
+  card: LotrCardDef; canChain: boolean; canAfford: boolean;
+  skillMap: Record<string, number>;
   onClose: () => void; onConfirm: (playOrDiscard: "PLAY" | "DISCARD", region?: string) => void;
 }) {
   const [chosenRegion, setChosenRegion] = useState<string | undefined>(undefined);
-  const [mode, setMode] = useState<"PLAY" | "DISCARD">("PLAY");
 
   const needsRegion = card.color === "RED" && card.redBannerRegions && card.redBannerRegions.length > 1;
 
   let coinsNeeded = card.coinCost;
-  const missingSkills: string[] = [];
+  const missingSkillCount: Record<string, number> = {};
   if (!canChain) {
     const needed: Record<string, number> = {};
     for (const s of card.skillCost) needed[s] = (needed[s] || 0) + 1;
@@ -131,18 +127,20 @@ function CardActionModal({ card, slot, canChain, canAfford, skillMap, myCoins, o
       const have = skillMap[s] || 0;
       if (have < count) {
         coinsNeeded += count - have;
-        missingSkills.push(`${s} (${count - have} substitution)`);
+        missingSkillCount[s] = count - have;
       }
     }
   }
+
+  const effectText = getCardEffectText(card);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-gray-800 rounded-xl p-5 max-w-sm w-full mx-4 text-white" onClick={e => e.stopPropagation()}>
         <div className="flex items-start gap-3 mb-4">
           <img src={getCardImagePath(card.id, card.chapter)} alt={card.name}
-            className="w-20 h-28 object-cover rounded border" />
-          <div>
+            className="w-28 h-40 object-cover rounded border" />
+          <div className="flex-1">
             <h3 className="font-bold text-sm">{card.name}</h3>
             <div className="text-[10px] text-gray-400">{card.color} • Ch {card.chapter}</div>
             {canChain ? (
@@ -151,18 +149,34 @@ function CardActionModal({ card, slot, canChain, canAfford, skillMap, myCoins, o
               <div className="text-xs mt-1">
                 {card.coinCost > 0 && <div>🪙 {card.coinCost} coins</div>}
                 {card.skillCost.length > 0 && (
-                  <div className="flex gap-0.5 flex-wrap">
-                    Cost: {card.skillCost.map((s, i) => <span key={i} className={`px-1 rounded ${SKILL_COLOR[s]}`}>{SKILL_ABBR[s]}</span>)}
+                  <div className="flex gap-1 flex-wrap items-center mt-1">
+                    Cost: {card.skillCost.map((s, i) => {
+                      const isMissing = (missingSkillCount[s] || 0) > 0;
+                      return (
+                        <div key={i} className={`relative ${isMissing ? "opacity-50" : ""}`}>
+                          <img src={getSkillIconPath(s as LotrSkill)} alt={s} className="w-6 h-6 rounded" />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
-                {missingSkills.length > 0 && <div className="text-yellow-400 text-[10px]">Missing: {missingSkills.join(", ")}</div>}
-                {coinsNeeded > 0 && <div className="text-xs">Total: 🪙{coinsNeeded}</div>}
+                {Object.keys(missingSkillCount).length > 0 && (
+                  <div className="text-yellow-400 text-[10px] mt-1">
+                    Missing skills: 🪙 {Object.values(missingSkillCount).reduce((a, b) => a + b, 0)} substitution coins
+                  </div>
+                )}
+                {coinsNeeded > 0 && <div className="text-xs mt-1">Total: 🪙 {coinsNeeded}</div>}
+              </div>
+            )}
+            {effectText && (
+              <div className="mt-2 text-xs text-gray-300 bg-gray-700/50 rounded p-2">
+                {effectText}
               </div>
             )}
           </div>
         </div>
 
-        {needsRegion && mode === "PLAY" && (
+        {needsRegion && (
           <div className="mb-3">
             <div className="text-xs text-gray-400 mb-1">Choose region:</div>
             <div className="flex gap-2">
@@ -217,9 +231,6 @@ function getRows(slots: LotrCardSlot[], chapter: number): PyramidRow[] {
       const pad = maxRow - size;
       const leftPad = Math.floor(pad / 2);
       const rightPad = Math.ceil(pad / 2);
-      // Half-offset needed when row differs from adjacent rows by odd count
-      // i.e. when this row size has different parity than maxRow
-      const needsOffset = (maxRow - size) % 2 !== 0;
       for (let p = 0; p < leftPad; p++) rowSlots.push(null);
       for (let i = 0; i < size; i++) {
         if (idx < slots.length) rowSlots.push(slots[idx++]);

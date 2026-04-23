@@ -84,3 +84,15 @@ export const ALL_CARDS: LotrCardDef[] = [
 
 const cardMap = new Map(ALL_CARDS.map(c => [c.id, c]));
 export function getCardDef(id: string): LotrCardDef | undefined { return cardMap.get(id); }
+
+export function getCardEffectText(card: LotrCardDef): string {
+  switch (card.color) {
+    case "YELLOW": return `Gain ${card.yellowCoins ?? 0} coins`;
+    case "BLUE": return `Advance ${card.blueRings ?? 0} ring(s) on quest track`;
+    case "GREEN": return card.greenRace ? `Gain a ${card.greenRace} race symbol` : "";
+    case "RED": return card.redBannerRegions ? `Place ${card.redUnitCount} unit(s) in ${card.redBannerRegions.join(" or ")}` : "";
+    case "GREY": return card.greySkills ? `Gain skill(s): ${card.greySkills.flat().join(", ")}` : "";
+    case "PURPLE": return card.purpleManeuvers ? `Maneuvers: ${card.purpleManeuvers.join(", ")}` : "";
+    default: return "";
+  }
+}

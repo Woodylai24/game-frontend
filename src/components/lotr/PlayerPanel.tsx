@@ -1,7 +1,9 @@
 "use client";
 
-import { LotrPlayerState, LotrPlayerSide, LotrCardColor, CARD_COLOR_BG } from "@/types/lotr";
+import { LotrPlayerState, LotrCardColor, LotrRace, LotrSkill, getCardImagePath, getRaceIconPath, getSkillIconPath } from "@/types/lotr";
 import { getCardDef } from "@/lib/lotrCards";
+
+const COLOR_ORDER: LotrCardColor[] = ["RED", "GREEN", "BLUE", "GREY", "PURPLE", "YELLOW"];
 
 interface Props {
   player: LotrPlayerState;
@@ -9,14 +11,20 @@ interface Props {
   isOpponent?: boolean;
 }
 
-export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props) {
-  const colorGroups: Record<string, string[]> = {};
+export default function PlayerPanel({ player, isCurrentTurn }: Props) {
+  const sortedCards = [...player.playedCardIds].sort((a, b) => {
+    const da = getCardDef(a);
+    const db = getCardDef(b);
+    if (!da || !db) return 0;
+    return COLOR_ORDER.indexOf(da.color) - COLOR_ORDER.indexOf(db.color);
+  });
+
+  const greySkills: LotrSkill[][] = [];
   for (const cardId of player.playedCardIds) {
     const def = getCardDef(cardId);
-    if (!def) continue;
-    const color = def.color;
-    if (!colorGroups[color]) colorGroups[color] = [];
-    colorGroups[color].push(cardId);
+    if (def?.color === "GREY" && def.greySkills) {
+      greySkills.push(...def.greySkills);
+    }
   }
 
   const fellowshipColors = player.side === "FELLOWSHIP"
@@ -48,28 +56,48 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props
 
       <div>
         <div className="text-[10px] text-gray-400 mb-1">Played Cards ({player.playedCardIds.length})</div>
-        <div className="space-y-1">
-          {Object.entries(colorGroups).map(([color, ids]) => (
-            <div key={color} className="flex items-center gap-1">
-              <div className={`w-4 h-4 rounded text-[8px] flex items-center justify-center font-bold ${CARD_COLOR_BG[color as LotrCardColor]}`}>
-                {ids.length}
+        <div className="relative" style={{ height: sortedCards.length > 0 ? `${40 + (sortedCards.length - 1) * 22}px` : "0px" }}>
+          {sortedCards.map((cardId, i) => {
+            const def = getCardDef(cardId);
+            if (!def) return null;
+            return (
+              <div key={cardId}
+                className="absolute left-0 right-0 overflow-hidden rounded border border-gray-600"
+                style={{ top: `${i * 22}px`, height: "40px" }}>
+                <img src={getCardImagePath(def.id, def.chapter)} alt={def.name}
+                  className="w-full h-auto object-contain" style={{ marginTop: "-2px" }} />
               </div>
-              <span className="text-[10px] text-gray-300">{color}</span>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <div className="text-[10px] text-gray-400 mb-1">Race Symbols</div>
+        <div className="flex flex-wrap gap-1">
+          {(Object.entries(player.raceSymbols) as [LotrRace, number][]).filter(([, v]) => v > 0).map(([race, count]) => (
+            <div key={race} className="flex items-center gap-0.5">
+              {Array.from({ length: count }).map((_, i) => (
+                <img key={i} src={getRaceIconPath(race)} alt={race} className="w-5 h-5 rounded" title={race} />
+              ))}
             </div>
           ))}
         </div>
       </div>
 
-      <div className="mt-2">
-        <div className="text-[10px] text-gray-400">Race Symbols</div>
-        <div className="flex flex-wrap gap-1">
-          {Object.entries(player.raceSymbols).filter(([, v]) => (v as number) > 0).map(([race, count]) => (
-            <span key={race} className="text-[10px] bg-green-800 text-green-200 px-1.5 py-0.5 rounded">
-              {race}: {count as number}
-            </span>
-          ))}
+      {greySkills.length > 0 && (
+        <div className="mt-2">
+          <div className="text-[10px] text-gray-400 mb-1">Skills</div>
+          <div className="flex flex-wrap gap-1">
+            {greySkills.map((choice, ci) =>
+              choice.map((skill, si) => (
+                <img key={`${ci}-${si}`} src={getSkillIconPath(skill)} alt={skill}
+                  className="w-5 h-5 rounded" title={skill} />
+              ))
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
