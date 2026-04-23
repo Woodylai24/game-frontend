@@ -86,8 +86,9 @@ function LandmarkModal({ tile, mySkills, fortressCount, canAfford, coinCost, onC
   onClose: () => void;
   onTake: () => void;
 }) {
-  const needed: Record<string, number> = {};
-  for (const s of tile.skillCost) needed[s] = (needed[s] || 0) + 1;
+  // Build missingSkills array: for each skill in cost, consume available skills
+  // and mark positions that need coin substitution
+  const missingSkills = getMissingSkills(tile.skillCost, mySkills);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
@@ -101,23 +102,18 @@ function LandmarkModal({ tile, mySkills, fortressCount, canAfford, coinCost, onC
         <div className="mb-3">
           <div className="text-xs text-gray-400 mb-1">Cost:</div>
           <div className="flex items-center gap-2 flex-wrap">
-            {tile.skillCost.map((s, i) => {
-              const have = mySkills[s] || 0;
-              const isMissing = (needed[s] || 0) > 0 && !tile.skillCost.slice(0, i).includes(s)
-                ? (needed[s] || 0) > have
-                : false;
-              return (
-                <div key={i} className={`relative ${isMissing ? "opacity-50" : ""}`}>
+            {tile.skillCost.map((s, i) => (
+                <div key={i} className={`relative ${missingSkills[i] ? "opacity-50" : ""}`}>
                   <img src={getSkillIconPath(s as LotrSkill)} alt={s}
                     className="w-8 h-8 rounded" />
-                  {isMissing && (
+                  {missingSkills[i] && (
                     <div className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                       🪙
                     </div>
                   )}
                 </div>
-              );
-            })}
+              ))
+            }
             {fortressCount > 0 && (
               <span className="text-yellow-400 text-sm">🪙 {fortressCount} (fortresses)</span>
             )}
@@ -146,4 +142,24 @@ function LandmarkModal({ tile, mySkills, fortressCount, canAfford, coinCost, onC
       </div>
     </div>
   );
+}
+
+/**
+ * For each skill in the cost list, consume available player skills.
+ * Returns a boolean array — true if that specific position needs coin substitution.
+ * This also works as a foundation for grey card A/B choices later:
+ * just call with the optimal skill allocation for the chosen option.
+ */
+function getMissingSkills(
+  skillCost: LotrSkill[],
+  mySkills: Record<string, number>,
+): boolean[] {
+  const available = { ...mySkills };
+  return skillCost.map(skill => {
+    if ((available[skill] ?? 0) > 0) {
+      available[skill]--;
+      return false;
+    }
+    return true;
+  });
 }

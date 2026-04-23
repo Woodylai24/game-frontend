@@ -119,15 +119,16 @@ function CardActionModal({ card, canChain, canAfford, skillMap, onClose, onConfi
   const needsRegion = card.color === "RED" && card.redBannerRegions && card.redBannerRegions.length > 1;
 
   let coinsNeeded = card.coinCost;
-  const missingSkillCount: Record<string, number> = {};
+  const missingSkillFlags: boolean[] = [];
   if (!canChain) {
-    const needed: Record<string, number> = {};
-    for (const s of card.skillCost) needed[s] = (needed[s] || 0) + 1;
-    for (const [s, count] of Object.entries(needed)) {
-      const have = skillMap[s] || 0;
-      if (have < count) {
-        coinsNeeded += count - have;
-        missingSkillCount[s] = count - have;
+    const available = { ...skillMap };
+    for (const s of card.skillCost) {
+      if ((available[s] ?? 0) > 0) {
+        available[s]--;
+        missingSkillFlags.push(false);
+      } else {
+        coinsNeeded++;
+        missingSkillFlags.push(true);
       }
     }
   }
@@ -150,19 +151,21 @@ function CardActionModal({ card, canChain, canAfford, skillMap, onClose, onConfi
                 {card.coinCost > 0 && <div>🪙 {card.coinCost} coins</div>}
                 {card.skillCost.length > 0 && (
                   <div className="flex gap-1 flex-wrap items-center mt-1">
-                    Cost: {card.skillCost.map((s, i) => {
-                      const isMissing = (missingSkillCount[s] || 0) > 0;
-                      return (
-                        <div key={i} className={`relative ${isMissing ? "opacity-50" : ""}`}>
-                          <img src={getSkillIconPath(s as LotrSkill)} alt={s} className="w-6 h-6 rounded" />
-                        </div>
-                      );
-                    })}
+                    Cost: {card.skillCost.map((s, i) => (
+                      <div key={i} className={`relative ${missingSkillFlags[i] ? "opacity-50" : ""}`}>
+                        <img src={getSkillIconPath(s as LotrSkill)} alt={s} className="w-6 h-6 rounded" />
+                        {missingSkillFlags[i] && (
+                          <div className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[8px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                            🪙
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
-                {Object.keys(missingSkillCount).length > 0 && (
+                {missingSkillFlags.some(Boolean) && (
                   <div className="text-yellow-400 text-[10px] mt-1">
-                    Missing skills: 🪙 {Object.values(missingSkillCount).reduce((a, b) => a + b, 0)} substitution coins
+                    Missing skills: 🪙 {missingSkillFlags.filter(Boolean).length} substitution coin(s)
                   </div>
                 )}
                 {coinsNeeded > 0 && <div className="text-xs mt-1">Total: 🪙 {coinsNeeded}</div>}
