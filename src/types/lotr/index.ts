@@ -82,6 +82,10 @@ export interface LotrGameState {
   maneuverPhase?: boolean;
   pendingManeuvers?: LotrManeuverType[];
   maneuverPlayer?: LotrPlayerSide | null;
+  bonusPhase?: boolean;
+  bonusPosition?: number;
+  bonusPlayer?: LotrPlayerSide | null;
+  extraTurn?: boolean;
 }
 
 export interface LotrStateResponse {
@@ -189,4 +193,8 @@ export function getRegionIconPath(region: LotrRegion): string {
 
 export function getLandmarkBackPath(): string {
   return `/lotr/Landmarks/back.png`;
+}
+
+export function getBonusIconPath(position: number): string {
+  return `/lotr/QuestTrack/${position}.png`;
 }

@@ -9,6 +9,9 @@ interface Props {
   isManeuverPhase?: boolean;
   pendingManeuvers?: LotrManeuverType[];
   onResolveManeuver?: (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => void;
+  isBonusPhase?: boolean;
+  bonusPosition?: number;
+  onResolveBonus?: (bonusPosition: number, targetRegion?: string, action?: string) => void;
 }
 
 const REGION_LABELS: Record<LotrRegion, string> = {
@@ -16,10 +19,11 @@ const REGION_LABELS: Record<LotrRegion, string> = {
   ENEDWAITH: "Enedwaith", ROHAN: "Rohan", GONDOR: "Gondor", MORDOR: "Mordor",
 };
 
-export default function RegionMap({ regions, mySide, isManeuverPhase, pendingManeuvers, onResolveManeuver }: Props) {
+export default function RegionMap({ regions, mySide, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus }: Props) {
   const [selectedFromRegion, setSelectedFromRegion] = useState<LotrRegion | null>(null);
   const [selectedToRegion, setSelectedToRegion] = useState<LotrRegion | null>(null);
   const [pendingRemoveRegion, setPendingRemoveRegion] = useState<LotrRegion | null>(null);
+  const [pendingBonusRegion, setPendingBonusRegion] = useState<LotrRegion | null>(null);
 
   const getRegionState = (r: LotrRegion) => regions.find(rs => rs.region === r);
 
@@ -36,13 +40,36 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
     return mySide === "FELLOWSHIP" ? state.units > 0 : state.units < 0;
   };
 
+  const isClickableForBonus12 = (state: LotrRegionState | undefined) => {
+    if (!state || !mySide) return false;
+    return state.fortress !== null && state.fortress !== mySide;
+  };
+
   const clearAll = () => {
     setSelectedFromRegion(null);
     setSelectedToRegion(null);
     setPendingRemoveRegion(null);
+    setPendingBonusRegion(null);
   };
 
   const handleRegionClick = (region: LotrRegion) => {
+    if (isBonusPhase && onResolveBonus && bonusPosition) {
+      const state = getRegionState(region);
+      if (!state) return;
+
+      if (pendingBonusRegion || pendingRemoveRegion || selectedToRegion) return;
+
+      if (bonusPosition === 6) {
+        setPendingBonusRegion(region);
+        return;
+      }
+      if (bonusPosition === 12 && isClickableForBonus12(state)) {
+        setPendingBonusRegion(region);
+        return;
+      }
+      return;
+    }
+
     if (!isManeuverPhase || !onResolveManeuver || !mySide) return;
 
     const state = getRegionState(region);
@@ -111,11 +138,17 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
           const isSelected = selectedFromRegion === region;
           const isMoveTarget = selectedFromRegion && !selectedToRegion && isAdjacentToSelected(region);
 
-          const isClickable = isRemoveTarget || isMoveSource || isMoveTarget || isSelected;
+          const isBonus6Target = isBonusPhase && bonusPosition === 6;
+          const isBonus12Target = isBonusPhase && bonusPosition === 12 && isClickableForBonus12(state);
+
+          const isClickable = isRemoveTarget || isMoveSource || isMoveTarget || isSelected || isBonus6Target || isBonus12Target;
           const highlightColor = isSelected || selectedToRegion === region ? "#a855f7"
             : pendingRemoveRegion === region ? "#ef4444"
+            : pendingBonusRegion === region ? "#f59e0b"
             : isRemoveTarget ? "#ef4444"
             : isMoveSource || isMoveTarget ? "#3b82f6"
+            : isBonus12Target ? "#f59e0b"
+            : isBonus6Target ? "#f59e0b"
             : null;
 
           return (
@@ -158,6 +191,56 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
         })}
       </svg>
 
+      {/* Bonus phase confirmation - place unit (position 6) */}
+      {isBonusPhase && bonusPosition === 6 && pendingBonusRegion && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-yellow-600 rounded-lg px-3 py-2 shadow-lg">
+          <span className="text-xs text-white">
+            Place unit in <strong>{REGION_LABELS[pendingBonusRegion]}</strong>?
+          </span>
+          <button onClick={() => {
+            onResolveBonus!(bonusPosition, pendingBonusRegion);
+            setPendingBonusRegion(null);
+          }}
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs font-bold">
+            Place
+          </button>
+          <button onClick={() => setPendingBonusRegion(null)}
+            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs font-bold">
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Bonus phase confirmation - remove fortress (position 12) */}
+      {isBonusPhase && bonusPosition === 12 && pendingBonusRegion && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-yellow-600 rounded-lg px-3 py-2 shadow-lg">
+          <span className="text-xs text-white">
+            Remove enemy fortress from <strong>{REGION_LABELS[pendingBonusRegion]}</strong>?
+          </span>
+          <button onClick={() => {
+            onResolveBonus!(bonusPosition, pendingBonusRegion);
+            setPendingBonusRegion(null);
+          }}
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs font-bold">
+            Remove
+          </button>
+          <button onClick={() => setPendingBonusRegion(null)}
+            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs font-bold">
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Bonus phase skip button */}
+      {isBonusPhase && !pendingBonusRegion && (
+        <div className="absolute top-2 right-2">
+          <button onClick={() => onResolveBonus!(bonusPosition!, undefined, "SKIP")}
+            className="bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold border border-yellow-600">
+            Skip
+          </button>
+        </div>
+      )}
+
       {/* Remove enemy unit confirmation */}
       {pendingRemoveRegion && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 shadow-lg">
@@ -199,7 +282,7 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
       )}
 
       {/* Cancel move source selection */}
-      {selectedFromRegion && !selectedToRegion && (
+      {selectedFromRegion && !selectedToRegion && !isBonusPhase && (
         <div className="absolute top-2 right-2">
           <button onClick={clearAll}
             className="bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold border border-gray-600">

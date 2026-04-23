@@ -94,6 +94,7 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
   const mySide = players.find(p => p.username === username)?.side as "FELLOWSHIP" | "SAURON" | undefined;
   const isMyTurn = lotrState?.currentTurnPlayer === mySide;
   const isManeuverPhase = lotrState?.maneuverPhase === true && lotrState?.maneuverPlayer === mySide;
+  const isBonusPhase = lotrState?.bonusPhase === true && lotrState?.bonusPlayer === mySide;
 
   const resolveManeuver = useCallback(async (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => {
     try {
@@ -118,5 +119,31 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
     }
   }, [sessionId]);
 
-  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, takeCard, takeLandmark, resolveManeuver, setError };
+  const resolveBonus = useCallback(async (bonusPosition: number, targetRegion?: string, action?: string) => {
+    try {
+      const body: Record<string, unknown> = { bonusPosition };
+      if (action === "SKIP") {
+        body.action = "SKIP";
+      } else {
+        body.action = "RESOLVE";
+        if (targetRegion) body.targetRegion = targetRegion;
+      }
+      const res = await apiFetch(`/api/game-sessions/${sessionId}/lotr/resolve-bonus`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Action failed" }));
+        throw new Error(err.error || "Action failed");
+      }
+      const data: LotrStateResponse = await res.json();
+      setLotrState(data.parsedState);
+      setGameStatus(data.gameStatus);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Action failed");
+      setTimeout(() => setError(""), 3000);
+    }
+  }, [sessionId]);
+
+  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, setError };
 }

@@ -8,6 +8,7 @@ import CardPyramid from "./CardPyramid";
 import LandmarkTiles from "./LandmarkTiles";
 import InfoBar from "./InfoBar";
 import ManeuverPanel from "./ManeuverPanel";
+import BonusPanel from "./BonusPanel";
 
 interface Props {
   state: LotrGameState;
@@ -19,9 +20,12 @@ interface Props {
   isManeuverPhase: boolean;
   pendingManeuvers: LotrManeuverType[];
   onResolveManeuver: (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => void;
+  isBonusPhase: boolean;
+  bonusPosition: number;
+  onResolveBonus: (bonusPosition: number, targetRegion?: string, action?: string) => void;
 }
 
-export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver }: Props) {
+export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus }: Props) {
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
   const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
 
@@ -29,6 +33,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
 
   const fortressCount = (state.regions || []).filter(r => r.fortress === mySide).length;
   const isFinished = gameStatus === "FINISHED";
+  const inInteractivePhase = isManeuverPhase || isBonusPhase;
 
   let winnerSide: LotrPlayerSide | undefined;
   let isDraw = false;
@@ -78,6 +83,15 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         </div>
       )}
 
+      {isBonusPhase && (
+        <div className="px-3 pt-3">
+          <BonusPanel
+            bonusPosition={bonusPosition}
+            onSkip={() => onResolveBonus(bonusPosition, undefined, "SKIP")}
+          />
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 overflow-auto">
         <div className="lg:w-48 flex-shrink-0 space-y-3">
           {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} />}
@@ -93,14 +107,17 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
                 isManeuverPhase={isManeuverPhase}
                 pendingManeuvers={pendingManeuvers}
                 onResolveManeuver={onResolveManeuver}
+                isBonusPhase={isBonusPhase}
+                bonusPosition={bonusPosition}
+                onResolveBonus={onResolveBonus}
               />
             </div>
-            <QuestTrack questTrack={state.questTrack} />
+            <QuestTrack questTrack={state.questTrack} bonusPosition={state.bonusPosition} />
           </div>
 
           <LandmarkTiles
             landmarks={state.landmarkTiles}
-            isMyTurn={!isManeuverPhase && isMyTurn}
+            isMyTurn={!inInteractivePhase && isMyTurn}
             myCoins={me?.coins ?? 0}
             myPlayedCards={myPlayedCards}
             fortressCount={fortressCount}
@@ -110,7 +127,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
           <CardPyramid
             cardSlots={state.cardSlots}
             currentChapter={state.currentChapter}
-            isMyTurn={!isManeuverPhase && isMyTurn}
+            isMyTurn={!inInteractivePhase && isMyTurn}
             onTakeCard={onTakeCard}
             myPlayedCards={myPlayedCards}
             myCoins={me?.coins ?? 0}

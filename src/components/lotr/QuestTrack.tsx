@@ -1,14 +1,16 @@
 "use client";
 
-import { LotrQuestTrack, LotrPlayerSide } from "@/types/lotr";
+import Image from "next/image";
+import { LotrQuestTrack, getBonusIconPath } from "@/types/lotr";
 
 interface Props {
   questTrack: LotrQuestTrack;
+  bonusPosition?: number;
 }
 
-const BONUS_SPACES = [3, 6, 9, 12, 14];
+const BONUS_SPACES = [3, 6, 9, 12];
 
-export default function QuestTrack({ questTrack }: Props) {
+export default function QuestTrack({ questTrack, bonusPosition }: Props) {
   const spaces = Array.from({ length: 15 }, (_, i) => i);
 
   return (
@@ -17,16 +19,26 @@ export default function QuestTrack({ questTrack }: Props) {
       <div className="flex gap-0.5 overflow-x-auto">
         {spaces.map(pos => {
           const isBonus = BONUS_SPACES.includes(pos);
+          const isWin = pos === 14;
           const isFellowship = questTrack.fellowshipPosition === pos;
           const isSauron = questTrack.sauronPosition === pos;
+          const isTriggered = bonusPosition === pos;
           return (
-            <div key={pos} className={`flex flex-col items-center min-w-[28px] ${isBonus ? "bg-yellow-900/50" : "bg-gray-800"} rounded p-1`}>
+            <div key={pos} className={`flex flex-col items-center min-w-[28px] ${
+              isTriggered ? "bg-yellow-500/60 ring-2 ring-yellow-400" :
+              isWin ? "bg-amber-900/50" :
+              isBonus ? "bg-yellow-900/50" :
+              "bg-gray-800"
+            } rounded p-1`}>
               <div className="text-[10px] text-gray-500">{pos}</div>
               <div className="w-5 h-5 flex items-center justify-center">
                 {isFellowship && <div className="w-3 h-3 rounded-full bg-blue-400 border border-blue-300" title="Fellowship" />}
                 {isSauron && <div className="w-3 h-3 rounded-full bg-red-400 border border-red-300" title="Sauron" />}
               </div>
-              {isBonus && <div className="text-[8px] text-yellow-400">★</div>}
+              {isBonus && (
+                <Image src={getBonusIconPath(pos)} alt={`Bonus ${pos}`} width={16} height={16} className="mt-0.5" />
+              )}
+              {isWin && <div className="text-[8px] text-amber-400 font-bold">WIN</div>}
             </div>
           );
         })}

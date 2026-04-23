@@ -188,6 +188,9 @@ export default function GamePage() {
           isManeuverPhase={lotr.isManeuverPhase}
           pendingManeuvers={lotr.lotrState?.pendingManeuvers ?? []}
           onResolveManeuver={lotr.resolveManeuver}
+          isBonusPhase={lotr.isBonusPhase}
+          bonusPosition={lotr.lotrState?.bonusPosition ?? -1}
+          onResolveBonus={lotr.resolveBonus}
         />
       </div>
     );
