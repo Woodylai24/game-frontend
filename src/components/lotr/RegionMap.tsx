@@ -12,6 +12,8 @@ interface Props {
   isBonusPhase?: boolean;
   bonusPosition?: number;
   onResolveBonus?: (bonusPosition: number, targetRegion?: string, action?: string) => void;
+  isLandmarkMovement?: boolean;
+  onResolveLandmark?: (action: string, data?: Record<string, string>) => void;
 }
 
 const REGION_LABELS: Record<LotrRegion, string> = {
@@ -19,7 +21,7 @@ const REGION_LABELS: Record<LotrRegion, string> = {
   ENEDWAITH: "Enedwaith", ROHAN: "Rohan", GONDOR: "Gondor", MORDOR: "Mordor",
 };
 
-export default function RegionMap({ regions, mySide, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus }: Props) {
+export default function RegionMap({ regions, mySide, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus, isLandmarkMovement, onResolveLandmark }: Props) {
   const [selectedFromRegion, setSelectedFromRegion] = useState<LotrRegion | null>(null);
   const [selectedToRegion, setSelectedToRegion] = useState<LotrRegion | null>(null);
   const [pendingRemoveRegion, setPendingRemoveRegion] = useState<LotrRegion | null>(null);
@@ -65,6 +67,31 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
       }
       if (bonusPosition === 12 && isClickableForBonus12(state)) {
         setPendingBonusRegion(region);
+        return;
+      }
+      return;
+    }
+
+    if (isLandmarkMovement && onResolveLandmark && mySide) {
+      const state = getRegionState(region);
+      if (!state) return;
+
+      if (selectedFromRegion && !selectedToRegion) {
+        if (selectedFromRegion === region) {
+          setSelectedFromRegion(null);
+          return;
+        }
+        const adj = REGION_ADJACENCY[selectedFromRegion];
+        if (adj?.includes(region)) {
+          setSelectedToRegion(region);
+        }
+        return;
+      }
+
+      if (pendingRemoveRegion || selectedToRegion) return;
+
+      if (isClickableForMove(state)) {
+        setSelectedFromRegion(region);
         return;
       }
       return;
@@ -141,12 +168,16 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
           const isBonus6Target = isBonusPhase && bonusPosition === 6;
           const isBonus12Target = isBonusPhase && bonusPosition === 12 && isClickableForBonus12(state);
 
-          const isClickable = isRemoveTarget || isMoveSource || isMoveTarget || isSelected || isBonus6Target || isBonus12Target;
+          const isLandmarkMoveSource = isLandmarkMovement && isClickableForMove(state) && !selectedFromRegion;
+          const isLandmarkMoveTarget = isLandmarkMovement && selectedFromRegion && !selectedToRegion && isAdjacentToSelected(region);
+
+          const isClickable = isRemoveTarget || isMoveSource || isMoveTarget || isSelected || isBonus6Target || isBonus12Target || isLandmarkMoveSource || isLandmarkMoveTarget;
           const highlightColor = isSelected || selectedToRegion === region ? "#a855f7"
             : pendingRemoveRegion === region ? "#ef4444"
             : pendingBonusRegion === region ? "#f59e0b"
             : isRemoveTarget ? "#ef4444"
             : isMoveSource || isMoveTarget ? "#3b82f6"
+            : isLandmarkMoveSource || isLandmarkMoveTarget ? "#10b981"
             : isBonus12Target ? "#f59e0b"
             : isBonus6Target ? "#f59e0b"
             : null;
@@ -261,14 +292,18 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
         </div>
       )}
 
-      {/* Move unit confirmation */}
-      {selectedFromRegion && selectedToRegion && (
+      {/* Move unit confirmation (maneuver or landmark) */}
+      {selectedFromRegion && selectedToRegion && !isBonusPhase && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 shadow-lg">
           <span className="text-xs text-white">
             Move unit <strong>{REGION_LABELS[selectedFromRegion]}</strong> → <strong>{REGION_LABELS[selectedToRegion]}</strong>?
           </span>
           <button onClick={() => {
-            onResolveManeuver!("MOVE_UNIT", undefined, selectedFromRegion, selectedToRegion);
+            if (isLandmarkMovement && onResolveLandmark) {
+              onResolveLandmark("MOVEMENT", { fromRegion: selectedFromRegion, toRegion: selectedToRegion });
+            } else {
+              onResolveManeuver!("MOVE_UNIT", undefined, selectedFromRegion, selectedToRegion);
+            }
             clearAll();
           }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold">
@@ -277,6 +312,16 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
           <button onClick={clearAll}
             className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs font-bold">
             Cancel
+          </button>
+        </div>
+      )}
+
+      {/* Landmark movement skip button */}
+      {isLandmarkMovement && !selectedFromRegion && !selectedToRegion && onResolveLandmark && (
+        <div className="absolute top-2 right-2">
+          <button onClick={() => onResolveLandmark("SKIP")}
+            className="bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold border border-green-600">
+            Skip
           </button>
         </div>
       )}

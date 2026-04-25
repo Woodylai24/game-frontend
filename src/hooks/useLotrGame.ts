@@ -95,6 +95,7 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
   const isMyTurn = lotrState?.currentTurnPlayer === mySide;
   const isManeuverPhase = lotrState?.maneuverPhase === true && lotrState?.maneuverPlayer === mySide;
   const isBonusPhase = lotrState?.bonusPhase === true && lotrState?.bonusPlayer === mySide;
+  const isLandmarkPhase = lotrState?.landmarkPhase === true && lotrState?.landmarkPlayer === mySide;
 
   const resolveManeuver = useCallback(async (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => {
     try {
@@ -145,5 +146,30 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
     }
   }, [sessionId]);
 
-  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, setError };
+  const resolveLandmark = useCallback(async (action: string, data?: Record<string, string>) => {
+    try {
+      const body: Record<string, unknown> = { action };
+      if (data) {
+        for (const [key, value] of Object.entries(data)) {
+          body[key] = value;
+        }
+      }
+      const res = await apiFetch(`/api/game-sessions/${sessionId}/lotr/resolve-landmark`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Action failed" }));
+        throw new Error(err.error || "Action failed");
+      }
+      const resp: LotrStateResponse = await res.json();
+      setLotrState(resp.parsedState);
+      setGameStatus(resp.gameStatus);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Action failed");
+      setTimeout(() => setError(""), 3000);
+    }
+  }, [sessionId]);
+
+  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, isLandmarkPhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, resolveLandmark, setError };
 }

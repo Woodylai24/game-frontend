@@ -191,6 +191,9 @@ export default function GamePage() {
           isBonusPhase={lotr.isBonusPhase}
           bonusPosition={lotr.lotrState?.bonusPosition ?? -1}
           onResolveBonus={lotr.resolveBonus}
+          isLandmarkPhase={lotr.isLandmarkPhase}
+          landmarkSubPhase={lotr.lotrState?.landmarkSubPhase ?? null}
+          onResolveLandmark={lotr.resolveLandmark}
         />
       </div>
     );

@@ -9,6 +9,8 @@ import LandmarkTiles from "./LandmarkTiles";
 import InfoBar from "./InfoBar";
 import ManeuverPanel from "./ManeuverPanel";
 import BonusPanel from "./BonusPanel";
+import LandmarkPanel from "./LandmarkPanel";
+import { getCardDef } from "@/lib/lotrCards";
 
 interface Props {
   state: LotrGameState;
@@ -23,17 +25,37 @@ interface Props {
   isBonusPhase: boolean;
   bonusPosition: number;
   onResolveBonus: (bonusPosition: number, targetRegion?: string, action?: string) => void;
+  isLandmarkPhase: boolean;
+  landmarkSubPhase: string | null;
+  onResolveLandmark: (action: string, data?: Record<string, string>) => void;
 }
 
-export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus }: Props) {
+export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus, isLandmarkPhase, landmarkSubPhase, onResolveLandmark }: Props) {
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
   const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
 
   const myPlayedCards = me?.playedCardIds ?? [];
 
+  // Build cardDefs map for LandmarkPanel
+  const cardDefsMap: Record<string, import("@/types/lotr").LotrCardDef> = {};
+  for (const cardId of (state.discardPile ?? [])) {
+    const def = getCardDef(cardId);
+    if (def) cardDefsMap[cardId] = def;
+  }
+  const opponentGreyCards = (opponent?.playedCardIds ?? []).filter(id => {
+    const def = getCardDef(id);
+    return def?.color === "GREY";
+  });
+  const opponentCardDefs: Record<string, import("@/types/lotr").LotrCardDef> = {};
+  for (const cardId of opponentGreyCards) {
+    const def = getCardDef(cardId);
+    if (def) opponentCardDefs[cardId] = def;
+  }
+
   const fortressCount = (state.regions || []).filter(r => r.fortress === mySide).length;
   const isFinished = gameStatus === "FINISHED";
-  const inInteractivePhase = isManeuverPhase || isBonusPhase;
+  const inInteractivePhase = isManeuverPhase || isBonusPhase || isLandmarkPhase;
+  const isLandmarkMovement = isLandmarkPhase && landmarkSubPhase === "MOVEMENT";
 
   let winnerSide: LotrPlayerSide | undefined;
   let isDraw = false;
@@ -92,6 +114,31 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         </div>
       )}
 
+      {isLandmarkPhase && !isLandmarkMovement && (
+        <div className="px-3 pt-3">
+          <LandmarkPanel
+            subPhase={landmarkSubPhase ?? ""}
+            movementsRemaining={state.landmarkMovementsRemaining}
+            discardPile={state.discardPile}
+            cardDefs={cardDefsMap}
+            drawnTokens={state.landmarkDrawnTokens}
+            opponentGreyCards={opponentGreyCards}
+            opponentCardDefs={opponentCardDefs}
+            onResolveLandmark={onResolveLandmark}
+          />
+        </div>
+      )}
+
+      {isLandmarkMovement && (
+        <div className="px-3 pt-3">
+          <LandmarkPanel
+            subPhase="MOVEMENT"
+            movementsRemaining={state.landmarkMovementsRemaining}
+            onResolveLandmark={onResolveLandmark}
+          />
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 overflow-auto">
         <div className="lg:w-48 flex-shrink-0 space-y-3">
           {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} />}
@@ -110,6 +157,8 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
                 isBonusPhase={isBonusPhase}
                 bonusPosition={bonusPosition}
                 onResolveBonus={onResolveBonus}
+                isLandmarkMovement={isLandmarkMovement}
+                onResolveLandmark={onResolveLandmark}
               />
             </div>
             <QuestTrack questTrack={state.questTrack} bonusPosition={state.bonusPosition} />

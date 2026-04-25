@@ -86,6 +86,13 @@ export interface LotrGameState {
   bonusPosition?: number;
   bonusPlayer?: LotrPlayerSide | null;
   extraTurn?: boolean;
+  landmarkPhase?: boolean;
+  activeLandmarkId?: string | null;
+  landmarkPlayer?: LotrPlayerSide | null;
+  landmarkMovementsRemaining?: number;
+  landmarkSubPhase?: string | null;
+  landmarkDrawnTokens?: string[];
+  discardPile?: string[];
 }
 
 export interface LotrStateResponse {
