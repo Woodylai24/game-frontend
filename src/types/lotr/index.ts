@@ -98,6 +98,12 @@ export interface LotrGameState {
   allianceRace?: string | null;
   allianceDrawnTokenIds?: string[];
   allianceDrawnTokens?: LotrAllianceTokenDef[];
+  allianceEffectPhase?: boolean;
+  allianceEffectPlayer?: LotrPlayerSide | null;
+  allianceEffectType?: string | null;
+  allianceEffectCounter?: number;
+  allianceEffectSubPhase?: string | null;
+  allianceEffectSelectedRegions?: string[];
   discardPile?: string[];
 }
 

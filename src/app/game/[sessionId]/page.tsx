@@ -199,6 +199,8 @@ export default function GamePage() {
           allianceTriggerType={lotr.lotrState?.allianceTriggerType ?? null}
           allianceRace={lotr.lotrState?.allianceRace ?? null}
           onResolveAlliance={lotr.resolveAlliance}
+          isAllianceEffectPhase={lotr.isAllianceEffectPhase}
+          onResolveAllianceEffect={lotr.resolveAllianceEffect}
         />
       </div>
     );

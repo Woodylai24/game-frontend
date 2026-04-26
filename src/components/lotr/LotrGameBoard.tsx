@@ -11,6 +11,7 @@ import ManeuverPanel from "./ManeuverPanel";
 import BonusPanel from "./BonusPanel";
 import LandmarkPanel from "./LandmarkPanel";
 import AlliancePanel from "./AlliancePanel";
+import AllianceEffectPanel from "./AllianceEffectPanel";
 import { getCardDef } from "@/lib/lotrCards";
 
 interface Props {
@@ -34,9 +35,11 @@ interface Props {
   allianceTriggerType: string | null;
   allianceRace: string | null;
   onResolveAlliance: (tokenId: string) => void;
+  isAllianceEffectPhase: boolean;
+  onResolveAllianceEffect: (data: Record<string, unknown>) => void;
 }
 
-export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance }: Props) {
+export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance, isAllianceEffectPhase, onResolveAllianceEffect }: Props) {
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
   const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
 
@@ -60,7 +63,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
 
   const fortressCount = (state.regions || []).filter(r => r.fortress === mySide).length;
   const isFinished = gameStatus === "FINISHED";
-  const inInteractivePhase = isManeuverPhase || isBonusPhase || isLandmarkPhase || isAlliancePhase;
+  const inInteractivePhase = isManeuverPhase || isBonusPhase || isLandmarkPhase || isAlliancePhase || isAllianceEffectPhase;
   const isLandmarkMovement = isLandmarkPhase && landmarkSubPhase === "MOVEMENT";
 
   let winnerSide: LotrPlayerSide | undefined;
@@ -153,6 +156,22 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
             drawnTokens={state.allianceDrawnTokens ?? []}
             onSelectToken={onResolveAlliance}
             readOnly={!isAlliancePhase}
+          />
+        </div>
+      )}
+
+      {state.allianceEffectPhase && (
+        <div className="px-3 pt-3">
+          <AllianceEffectPanel
+            effectType={state.allianceEffectType ?? ""}
+            effectSubPhase={state.allianceEffectSubPhase ?? ""}
+            counter={state.allianceEffectCounter ?? 0}
+            selectedRegions={state.allianceEffectSelectedRegions ?? []}
+            discardPile={state.discardPile ?? []}
+            mySide={mySide}
+            regions={state.regions}
+            onResolve={onResolveAllianceEffect}
+            readOnly={!isAllianceEffectPhase}
           />
         </div>
       )}

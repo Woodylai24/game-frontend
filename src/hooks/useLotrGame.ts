@@ -97,6 +97,7 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
   const isBonusPhase = lotrState?.bonusPhase === true && lotrState?.bonusPlayer === mySide;
   const isLandmarkPhase = lotrState?.landmarkPhase === true && lotrState?.landmarkPlayer === mySide;
   const isAlliancePhase = lotrState?.alliancePhase === true && lotrState?.alliancePlayer === mySide;
+  const isAllianceEffectPhase = lotrState?.allianceEffectPhase === true && lotrState?.allianceEffectPlayer === mySide;
 
   const resolveManeuver = useCallback(async (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => {
     try {
@@ -191,5 +192,24 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
     }
   }, [sessionId]);
 
-  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, isLandmarkPhase, isAlliancePhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, resolveLandmark, resolveAlliance, setError };
+  const resolveAllianceEffect = useCallback(async (data: Record<string, unknown>) => {
+    try {
+      const res = await apiFetch(`/api/game-sessions/${sessionId}/lotr/resolve-alliance-effect`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Action failed" }));
+        throw new Error(err.error || "Action failed");
+      }
+      const resp: LotrStateResponse = await res.json();
+      setLotrState(resp.parsedState);
+      setGameStatus(resp.gameStatus);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Action failed");
+      setTimeout(() => setError(""), 3000);
+    }
+  }, [sessionId]);
+
+  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, isLandmarkPhase, isAlliancePhase, isAllianceEffectPhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, resolveLandmark, resolveAlliance, resolveAllianceEffect, setError };
 }
