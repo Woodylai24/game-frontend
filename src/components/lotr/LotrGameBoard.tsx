@@ -1,6 +1,6 @@
 "use client";
 
-import { LotrGameState, LotrPlayerSide, LotrManeuverType } from "@/types/lotr";
+import { LotrGameState, LotrPlayerSide, LotrManeuverType, LotrAllianceTokenDef } from "@/types/lotr";
 import RegionMap from "./RegionMap";
 import QuestTrack from "./QuestTrack";
 import PlayerPanel from "./PlayerPanel";
@@ -10,6 +10,7 @@ import InfoBar from "./InfoBar";
 import ManeuverPanel from "./ManeuverPanel";
 import BonusPanel from "./BonusPanel";
 import LandmarkPanel from "./LandmarkPanel";
+import AlliancePanel from "./AlliancePanel";
 import { getCardDef } from "@/lib/lotrCards";
 
 interface Props {
@@ -28,9 +29,14 @@ interface Props {
   isLandmarkPhase: boolean;
   landmarkSubPhase: string | null;
   onResolveLandmark: (action: string, data?: Record<string, string>) => void;
+  isAlliancePhase: boolean;
+  allianceDrawnTokens: LotrAllianceTokenDef[];
+  allianceTriggerType: string | null;
+  allianceRace: string | null;
+  onResolveAlliance: (tokenId: string) => void;
 }
 
-export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus, isLandmarkPhase, landmarkSubPhase, onResolveLandmark }: Props) {
+export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance }: Props) {
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
   const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
 
@@ -54,7 +60,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
 
   const fortressCount = (state.regions || []).filter(r => r.fortress === mySide).length;
   const isFinished = gameStatus === "FINISHED";
-  const inInteractivePhase = isManeuverPhase || isBonusPhase || isLandmarkPhase;
+  const inInteractivePhase = isManeuverPhase || isBonusPhase || isLandmarkPhase || isAlliancePhase;
   const isLandmarkMovement = isLandmarkPhase && landmarkSubPhase === "MOVEMENT";
 
   let winnerSide: LotrPlayerSide | undefined;
@@ -135,6 +141,18 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
             subPhase="MOVEMENT"
             movementsRemaining={state.landmarkMovementsRemaining}
             onResolveLandmark={onResolveLandmark}
+          />
+        </div>
+      )}
+
+      {state.alliancePhase && (
+        <div className="px-3 pt-3">
+          <AlliancePanel
+            triggerType={state.allianceTriggerType ?? ""}
+            race={state.allianceRace}
+            drawnTokens={state.allianceDrawnTokens ?? []}
+            onSelectToken={onResolveAlliance}
+            readOnly={!isAlliancePhase}
           />
         </div>
       )}

@@ -96,6 +96,7 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
   const isManeuverPhase = lotrState?.maneuverPhase === true && lotrState?.maneuverPlayer === mySide;
   const isBonusPhase = lotrState?.bonusPhase === true && lotrState?.bonusPlayer === mySide;
   const isLandmarkPhase = lotrState?.landmarkPhase === true && lotrState?.landmarkPlayer === mySide;
+  const isAlliancePhase = lotrState?.alliancePhase === true && lotrState?.alliancePlayer === mySide;
 
   const resolveManeuver = useCallback(async (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => {
     try {
@@ -171,5 +172,24 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
     }
   }, [sessionId]);
 
-  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, isLandmarkPhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, resolveLandmark, setError };
+  const resolveAlliance = useCallback(async (tokenId: string) => {
+    try {
+      const res = await apiFetch(`/api/game-sessions/${sessionId}/lotr/resolve-alliance`, {
+        method: "POST",
+        body: JSON.stringify({ tokenId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Action failed" }));
+        throw new Error(err.error || "Action failed");
+      }
+      const data: LotrStateResponse = await res.json();
+      setLotrState(data.parsedState);
+      setGameStatus(data.gameStatus);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Action failed");
+      setTimeout(() => setError(""), 3000);
+    }
+  }, [sessionId]);
+
+  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, isLandmarkPhase, isAlliancePhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, resolveLandmark, resolveAlliance, setError };
 }

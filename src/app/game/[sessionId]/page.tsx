@@ -194,6 +194,11 @@ export default function GamePage() {
           isLandmarkPhase={lotr.isLandmarkPhase}
           landmarkSubPhase={lotr.lotrState?.landmarkSubPhase ?? null}
           onResolveLandmark={lotr.resolveLandmark}
+          isAlliancePhase={lotr.isAlliancePhase}
+          allianceDrawnTokens={lotr.lotrState?.allianceDrawnTokens ?? []}
+          allianceTriggerType={lotr.lotrState?.allianceTriggerType ?? null}
+          allianceRace={lotr.lotrState?.allianceRace ?? null}
+          onResolveAlliance={lotr.resolveAlliance}
         />
       </div>
     );

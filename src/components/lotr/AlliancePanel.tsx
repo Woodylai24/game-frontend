@@ -1,0 +1,51 @@
+"use client";
+
+import { LotrAllianceTokenDef, LotrRace, getRaceIconPath } from "@/types/lotr";
+
+interface Props {
+  triggerType: string;
+  race?: string | null;
+  drawnTokens: LotrAllianceTokenDef[];
+  onSelectToken: (tokenId: string) => void;
+  readOnly?: boolean;
+}
+
+const RACE_LABELS: Record<string, string> = {
+  ELVES: "Elves", ENTS: "Ents", HOBBITS: "Hobbits",
+  HUMANS: "Humans", DWARVES: "Dwarves", WIZARDS: "Wizards",
+};
+
+export default function AlliancePanel({ triggerType, race, drawnTokens, onSelectToken, readOnly }: Props) {
+  if (drawnTokens.length === 0) return null;
+
+  const subtitle = triggerType === "PAIR"
+    ? `You have 2 matching ${RACE_LABELS[race ?? ""] ?? race} symbols!`
+    : "You have 3 different race symbols!";
+
+  return (
+    <div className="bg-teal-900/70 border border-teal-500 rounded-lg p-4">
+      <div className="text-sm font-bold text-teal-200 mb-1">Alliance Token Selection</div>
+      <div className="text-xs text-teal-300 mb-3">{subtitle} Choose an Alliance Token:</div>
+      <div className="flex flex-wrap gap-3 justify-center">
+        {drawnTokens.map(token => (
+          <button
+            key={token.id}
+            onClick={() => !readOnly && onSelectToken(token.id)}
+            disabled={readOnly}
+            className={`bg-gray-800 border-2 border-teal-600 rounded-lg p-3 w-44 text-left transition-colors
+              ${readOnly ? "cursor-default opacity-80" : "hover:border-teal-400 hover:bg-gray-700 cursor-pointer"}`}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <img src={getRaceIconPath(token.race as LotrRace)} alt={token.race} className="w-6 h-6 rounded" />
+              <span className="text-sm font-bold text-white">{token.name}</span>
+            </div>
+            <div className="text-[10px] text-gray-400 leading-tight">{token.effect}</div>
+          </button>
+        ))}
+      </div>
+      {readOnly && (
+        <div className="text-xs text-teal-400 mt-2 text-center">Waiting for opponent to select...</div>
+      )}
+    </div>
+  );
+}

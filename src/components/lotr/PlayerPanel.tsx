@@ -1,7 +1,7 @@
 "use client";
 
 import { LotrPlayerState, LotrCardColor, LotrRace, LotrSkill, getCardImagePath, getRaceIconPath, getSkillIconPath } from "@/types/lotr";
-import { getCardDef } from "@/lib/lotrCards";
+import { getCardDef, getTokenDef } from "@/lib/lotrCards";
 
 const COLOR_ORDER: LotrCardColor[] = ["RED", "GREEN", "BLUE", "GREY", "PURPLE", "YELLOW"];
 
@@ -52,9 +52,15 @@ export default function PlayerPanel({ player, isCurrentTurn }: Props) {
         <div className="mb-2">
           <div className="text-[10px] text-gray-400 mb-1">Alliances</div>
           <div className="flex flex-wrap gap-1">
-            {player.allianceTokenIds.map(id => (
-              <span key={id} className="text-[10px] bg-purple-800 text-purple-200 px-1.5 py-0.5 rounded">{id.replace("AT-","")}</span>
-            ))}
+            {player.allianceTokenIds.map(id => {
+              const def = getTokenDef(id);
+              return (
+                <span key={id} className="flex items-center gap-1 text-[10px] bg-purple-800 text-purple-200 px-1.5 py-0.5 rounded">
+                  {def && <img src={getRaceIconPath(def.race as LotrRace)} alt={def.race} className="w-3 h-3 rounded" />}
+                  {def ? def.name : id.replace("AT-","")}
+                </span>
+              );
+            })}
           </div>
         </div>
       )}

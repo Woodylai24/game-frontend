@@ -92,6 +92,12 @@ export interface LotrGameState {
   landmarkMovementsRemaining?: number;
   landmarkSubPhase?: string | null;
   landmarkDrawnTokens?: string[];
+  alliancePhase?: boolean;
+  alliancePlayer?: LotrPlayerSide | null;
+  allianceTriggerType?: string | null;
+  allianceRace?: string | null;
+  allianceDrawnTokenIds?: string[];
+  allianceDrawnTokens?: LotrAllianceTokenDef[];
   discardPile?: string[];
 }
 
