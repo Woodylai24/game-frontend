@@ -93,10 +93,15 @@ export default function PlayerPanel({ player, isCurrentTurn }: Props) {
               ))}
             </div>
           ))}
+          {player.allianceTokenIds.includes("AT-HOBBITS-1") && (
+            <div className="flex items-center gap-0.5" title="Eagle (Hobbits 1)">
+              <span className="w-5 h-5 flex items-center justify-center text-base">🦅</span>
+            </div>
+          )}
         </div>
       </div>
 
-      {(fixedSkills.length > 0 || optionSkillGroups.length > 0) && (
+      {(fixedSkills.length > 0 || optionSkillGroups.length > 0 || player.allianceTokenIds.includes("AT-ELVES-3")) && (
         <div className="mt-2">
           <div className="text-[10px] text-gray-400 mb-1">Skills</div>
           <div className="flex flex-wrap gap-1 items-center">
@@ -115,6 +120,11 @@ export default function PlayerPanel({ player, isCurrentTurn }: Props) {
                 ))}
               </div>
             ))}
+            {player.allianceTokenIds.includes("AT-ELVES-3") && (
+              <div className="flex items-center gap-0.5 bg-gradient-to-br from-purple-700 to-yellow-600 rounded px-1 py-0.5 border border-yellow-400" title="Wild (Elves 3): once per turn, counts as any skill">
+                <span className="text-[10px] font-bold text-yellow-200">W</span>
+              </div>
+            )}
           </div>
         </div>
       )}

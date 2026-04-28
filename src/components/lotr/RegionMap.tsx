@@ -55,13 +55,13 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
   };
 
   const handleRegionClick = (region: LotrRegion) => {
-    if (isBonusPhase && onResolveBonus && bonusPosition) {
+    if (isBonusPhase && onResolveBonus && (bonusPosition === 6 || bonusPosition === 0 || bonusPosition === 12)) {
       const state = getRegionState(region);
       if (!state) return;
 
       if (pendingBonusRegion || pendingRemoveRegion || selectedToRegion) return;
 
-      if (bonusPosition === 6) {
+      if (bonusPosition === 6 || bonusPosition === 0) {
         setPendingBonusRegion(region);
         return;
       }
@@ -165,7 +165,7 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
           const isSelected = selectedFromRegion === region;
           const isMoveTarget = selectedFromRegion && !selectedToRegion && isAdjacentToSelected(region);
 
-          const isBonus6Target = isBonusPhase && bonusPosition === 6;
+          const isBonus6Target = isBonusPhase && (bonusPosition === 6 || bonusPosition === 0);
           const isBonus12Target = isBonusPhase && bonusPosition === 12 && isClickableForBonus12(state);
 
           const isLandmarkMoveSource = isLandmarkMovement && isClickableForMove(state) && !selectedFromRegion;
@@ -222,8 +222,8 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
         })}
       </svg>
 
-      {/* Bonus phase confirmation - place unit (position 6) */}
-      {isBonusPhase && bonusPosition === 6 && pendingBonusRegion && (
+      {/* Bonus phase confirmation - place unit (position 6 or 0) */}
+      {isBonusPhase && (bonusPosition === 6 || bonusPosition === 0) && pendingBonusRegion && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-yellow-600 rounded-lg px-3 py-2 shadow-lg">
           <span className="text-xs text-white">
             Place unit in <strong>{REGION_LABELS[pendingBonusRegion]}</strong>?

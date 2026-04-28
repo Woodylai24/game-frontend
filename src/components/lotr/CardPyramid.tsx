@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { LotrCardSlot, LotrCardDef, LotrSkill, getCardImagePath, getCardBackPath, getSkillIconPath } from "@/types/lotr";
+import { LotrCardSlot, LotrCardDef, LotrSkill, LotrRegion, getCardImagePath, getCardBackPath, getSkillIconPath } from "@/types/lotr";
 import { getCardDef, getCardEffectText, resolveSkillsWithOptions } from "@/lib/lotrCards";
+
+const ALL_REGIONS: LotrRegion[] = ["LINDON", "ARNOR", "RHOVANION", "ENEDWAITH", "ROHAN", "GONDOR", "MORDOR"];
 
 interface Props {
   cardSlots: LotrCardSlot[];
@@ -11,9 +13,10 @@ interface Props {
   onTakeCard: (slotId: number, playOrDiscard: "PLAY" | "DISCARD", chosenRegion?: string) => void;
   myPlayedCards: string[];
   myCoins: number;
+  myAllianceTokenIds?: string[];
 }
 
-export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTakeCard, myPlayedCards, myCoins }: Props) {
+export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTakeCard, myPlayedCards, myCoins, myAllianceTokenIds }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<LotrCardSlot | null>(null);
 
   const rows = getRows(cardSlots, currentChapter);
@@ -27,7 +30,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
 
   const canAfford = (card: LotrCardDef) => {
     if (canChain) return true;
-    const resolved = resolveSkillsWithOptions(myPlayedCards, card.skillCost as LotrSkill[]);
+    const resolved = resolveSkillsWithOptions(myPlayedCards, card.skillCost as LotrSkill[], myAllianceTokenIds);
     const totalCoins = card.coinCost + resolved.totalCoinSubstitution;
     return myCoins >= totalCoins;
   };
@@ -83,6 +86,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
           canChain={!!canChain}
           canAfford={canAfford(availableCard)}
           myPlayedCards={myPlayedCards}
+          myAllianceTokenIds={myAllianceTokenIds}
           onClose={() => setSelectedSlot(null)}
           onConfirm={(playOrDiscard, region) => {
             onTakeCard(selectedSlot.id, playOrDiscard, region);
@@ -94,18 +98,21 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
   );
 }
 
-function CardActionModal({ card, canChain, canAfford, myPlayedCards, onClose, onConfirm }: {
+function CardActionModal({ card, canChain, canAfford, myPlayedCards, myAllianceTokenIds, onClose, onConfirm }: {
   card: LotrCardDef; canChain: boolean; canAfford: boolean;
   myPlayedCards: string[];
+  myAllianceTokenIds?: string[];
   onClose: () => void; onConfirm: (playOrDiscard: "PLAY" | "DISCARD", region?: string) => void;
 }) {
   const [chosenRegion, setChosenRegion] = useState<string | undefined>(undefined);
 
-  const needsRegion = card.color === "RED" && card.redBannerRegions && card.redBannerRegions.length > 1;
+  const hasElves2 = myAllianceTokenIds?.includes("AT-ELVES-2") ?? false;
+  const needsRegion = card.color === "RED" && card.redBannerRegions && card.redBannerRegions.length > 0 && (hasElves2 || card.redBannerRegions.length > 1);
+  const regionChoices = hasElves2 && card.color === "RED" ? ALL_REGIONS : (card.redBannerRegions ?? []);
 
   const resolved = canChain
     ? { covered: card.skillCost.map(() => true), totalCoinSubstitution: 0 }
-    : resolveSkillsWithOptions(myPlayedCards, card.skillCost as LotrSkill[]);
+    : resolveSkillsWithOptions(myPlayedCards, card.skillCost as LotrSkill[], myAllianceTokenIds);
 
   const coinsNeeded = card.coinCost + resolved.totalCoinSubstitution;
 
@@ -151,11 +158,13 @@ function CardActionModal({ card, canChain, canAfford, myPlayedCards, onClose, on
           </div>
         </div>
 
-        {needsRegion && (
+        {needsRegion && regionChoices.length > 1 && (
           <div className="mb-3">
-            <div className="text-xs text-gray-400 mb-1">Choose region:</div>
-            <div className="flex gap-2">
-              {card.redBannerRegions!.map(r => (
+            <div className="text-xs text-gray-400 mb-1">
+              {hasElves2 ? "Choose any region (Elves 2):" : "Choose region:"}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {regionChoices.map(r => (
                 <button key={r} onClick={() => setChosenRegion(r)}
                   className={`px-3 py-1 rounded text-xs ${chosenRegion === r ? "bg-yellow-500 text-black" : "bg-gray-700"}`}>
                   {r}
@@ -167,7 +176,7 @@ function CardActionModal({ card, canChain, canAfford, myPlayedCards, onClose, on
 
         <div className="flex gap-2">
           <button onClick={() => onConfirm("PLAY", chosenRegion)}
-            disabled={(!canAfford && !canChain) || (needsRegion && !chosenRegion)}
+            disabled={(!canAfford && !canChain) || (needsRegion && regionChoices.length > 1 && !chosenRegion)}
             className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed py-2 rounded font-bold text-sm">
             Play {!canAfford ? "(can't afford)" : canChain ? "(Free!)" : `(${coinsNeeded} 🪙)`}
           </button>

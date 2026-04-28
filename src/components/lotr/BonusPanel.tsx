@@ -6,6 +6,7 @@ interface Props {
 }
 
 const BONUS_LABELS: Record<number, { title: string; description: string }> = {
+  0: { title: "Hobbits 2: Place Unit", description: "Place 1 unit in any region" },
   6: { title: "Bonus: Place Unit", description: "Place 1 unit in any region" },
   12: { title: "Bonus: Remove Fortress", description: "Remove 1 enemy fortress from any region" },
 };

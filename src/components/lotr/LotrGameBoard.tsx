@@ -217,6 +217,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
             onTakeCard={onTakeCard}
             myPlayedCards={myPlayedCards}
             myCoins={me?.coins ?? 0}
+            myAllianceTokenIds={me?.allianceTokenIds}
           />
         </div>
       </div>

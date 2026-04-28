@@ -7,7 +7,8 @@ export interface ResolvedSkillCoverage {
 
 export function resolveSkillsWithOptions(
   playedCardIds: string[],
-  costSkills: LotrSkill[]
+  costSkills: LotrSkill[],
+  allianceTokenIds?: string[]
 ): ResolvedSkillCoverage {
   const fixedSkills: Record<string, number> = {};
   const optionCards: LotrSkill[][] = [];
@@ -48,7 +49,12 @@ export function resolveSkillsWithOptions(
     }
   }
 
-  const totalCoinSubstitution = covered.filter(c => !c).length;
+  let totalCoinSubstitution = covered.filter(c => !c).length;
+
+  if (allianceTokenIds?.includes("AT-ELVES-3") && totalCoinSubstitution > 0) {
+    totalCoinSubstitution -= 1;
+  }
+
   return { covered, totalCoinSubstitution };
 }
 
