@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LotrPlayerState, LotrCardColor, LotrRace, LotrSkill, getCardImagePath, getRaceIconPath, getSkillIconPath } from "@/types/lotr";
+import { LotrPlayerState, LotrCardColor, LotrRace, LotrSkill, LotrLandmarkTileDef, getCardImagePath, getRaceIconPath, getSkillIconPath, getLandmarkImagePath } from "@/types/lotr";
 import { getCardDef, getTokenDef } from "@/lib/lotrCards";
 
 const COLOR_ORDER: LotrCardColor[] = ["RED", "GREEN", "BLUE", "GREY", "PURPLE", "YELLOW"];
@@ -11,9 +11,10 @@ interface Props {
   isCurrentTurn: boolean;
   isOpponent?: boolean;
   playerName?: string;
+  takenLandmarks?: LotrLandmarkTileDef[];
 }
 
-export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerName }: Props) {
+export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerName, takenLandmarks }: Props) {
   const sortedCards = [...player.playedCardIds].sort((a, b) => {
     const da = getCardDef(a);
     const db = getCardDef(b);
@@ -35,6 +36,7 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
   }
 
   const [cardsExpanded, setCardsExpanded] = useState(false);
+  const [landmarksExpanded, setLandmarksExpanded] = useState(false);
   const cardExposedHeight = 120;
   const cardOverlap = 25;
 
@@ -87,6 +89,33 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
         )}
       </div>
 
+      {(takenLandmarks ?? []).length > 0 && (
+        <div className="mt-2">
+          <button
+            onClick={() => setLandmarksExpanded(e => !e)}
+            className="flex items-center gap-1 text-[10px] text-gray-400 mb-1 hover:text-gray-200 w-full text-left"
+          >
+            <span className="text-[8px]">{landmarksExpanded ? "▼" : "▶"}</span>
+            Taken Landmarks ({takenLandmarks!.length})
+          </button>
+          {landmarksExpanded && (
+            <div
+              className="relative overflow-hidden"
+              style={{ height: `${100 + (takenLandmarks!.length - 1) * 25}px` }}
+            >
+              {[...takenLandmarks!].reverse().map((tile, i) => (
+                <div key={tile.id}
+                  className="absolute overflow-hidden rounded border border-gray-600"
+                  style={{ top: `${i * 25}px`, height: "100px", width: "80px" }}>
+                  <img src={getLandmarkImagePath(tile.id)} alt={tile.name}
+                    className="w-full h-full object-cover object-bottom" title={tile.effect} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {player.allianceTokenIds.length > 0 && (
         <div className="mt-2">
           <div className="text-[10px] text-gray-400 mb-1">Alliances</div>
@@ -98,7 +127,7 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
               const num = parts[2] || "";
               const raceLabel = race.charAt(0) + race.slice(1).toLowerCase();
               const imgPath = `/lotr/alliances/${raceLabel}_${num}.png`;
-              const tooltip = def ? `${def.name}: ${def.effect}` : id;
+              const tooltip = def ? def.effect : id;
               return (
                 <img key={id} src={imgPath} alt={def?.name ?? id}
                   className="w-8 h-8 rounded" title={tooltip} />
@@ -161,14 +190,23 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
           if (def?.chainingSymbol) chainSymbols.add(def.chainingSymbol);
         }
         if (chainSymbols.size === 0) return null;
+        const usedChainCosts = new Set<string>();
+        for (const cardId of player.playedCardIds) {
+          const def = getCardDef(cardId);
+          if (def?.chainCost) usedChainCosts.add(def.chainCost);
+        }
         return (
           <div className="mt-2">
             <div className="text-[10px] text-gray-400 mb-1">Chaining Symbols</div>
             <div className="flex flex-wrap gap-1">
-              {[...chainSymbols].map(sym => (
-                <img key={sym} src={`/lotr/Chains/${sym.toLowerCase()}.png`} alt={sym}
-                  className="w-6 h-6 rounded" title={sym} />
-              ))}
+              {[...chainSymbols].map(sym => {
+                const used = usedChainCosts.has(sym);
+                return (
+                  <img key={sym} src={`/lotr/Chains/${sym.toLowerCase()}.png`} alt={sym}
+                    className={`w-6 h-8 rounded${used ? " opacity-40 grayscale" : ""}`}
+                    title={`${sym}${used ? " (used)" : ""}`} />
+                );
+              })}
             </div>
           </div>
         );

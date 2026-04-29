@@ -61,6 +61,7 @@ export interface LotrPlayerState {
   allianceTokenIds: string[];
   raceSymbols: Record<LotrRace, number>;
   hasUsedThreeDifferentRaces: boolean;
+  takenLandmarkIds?: string[];
 }
 
 export interface LotrQuestTrack {
