@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LotrPlayerState, LotrCardColor, LotrRace, LotrSkill, getCardImagePath, getRaceIconPath, getSkillIconPath, getLandmarkImagePath } from "@/types/lotr";
-import { getCardDef, getTokenDef, LANDMARK_EFFECTS } from "@/lib/lotrCards";
+import { getCardDef, getTokenDef } from "@/lib/lotrCards";
 
 const COLOR_ORDER: LotrCardColor[] = ["RED", "GREEN", "BLUE", "GREY", "PURPLE", "YELLOW"];
 
@@ -11,10 +11,10 @@ interface Props {
   isCurrentTurn: boolean;
   isOpponent?: boolean;
   playerName?: string;
-  takenLandmarkIds?: string[];
+  takenLandmarks?: { id: string; name: string; effect: string }[];
 }
 
-export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerName, takenLandmarkIds }: Props) {
+export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerName, takenLandmarks }: Props) {
   const sortedCards = [...player.playedCardIds].sort((a, b) => {
     const da = getCardDef(a);
     const db = getCardDef(b);
@@ -89,26 +89,26 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
         )}
       </div>
 
-      {(takenLandmarkIds ?? []).length > 0 && (
+      {(takenLandmarks ?? []).length > 0 && (
         <div className="mt-2">
           <button
             onClick={() => setLandmarksExpanded(e => !e)}
             className="flex items-center gap-1 text-[10px] text-gray-400 mb-1 hover:text-gray-200 w-full text-left"
           >
             <span className="text-[8px]">{landmarksExpanded ? "▼" : "▶"}</span>
-            Taken Landmarks ({takenLandmarkIds!.length})
+            Taken Landmarks ({takenLandmarks!.length})
           </button>
           {landmarksExpanded && (
             <div
               className="relative overflow-hidden"
-              style={{ height: `${100 + (takenLandmarkIds!.length - 1) * 25}px` }}
+              style={{ height: `${100 + (takenLandmarks!.length - 1) * 25}px` }}
             >
-              {[...takenLandmarkIds!].map((id, i) => (
-                <div key={id}
+              {[...takenLandmarks!].map((tile, i) => (
+                <div key={tile.id}
                   className="absolute overflow-hidden rounded border border-gray-600"
-                  style={{ top: `${(takenLandmarkIds!.length - 1 - i) * 25}px`, height: "100px", width: "100px", zIndex: i }}>
-                  <img src={getLandmarkImagePath(id)} alt={id}
-                    className="w-full h-full object-cover object-bottom" title={LANDMARK_EFFECTS[id] ?? id} />
+                  style={{ top: `${(takenLandmarks!.length - 1 - i) * 25}px`, height: "100px", width: "100px", zIndex: i }}>
+                  <img src={getLandmarkImagePath(tile.id)} alt={tile.name}
+                    className="w-full h-full object-cover object-bottom" title={tile.effect} />
                 </div>
               ))}
             </div>

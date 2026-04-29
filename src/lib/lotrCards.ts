@@ -192,3 +192,20 @@ export const LANDMARK_EFFECTS: Record<string, string> = {
   "LM-06": "Place 1 Fortress in Enedwaith. Discard 1 Grey card from opponent's play area. Move quest 1 space.",
   "LM-07": "Place 1 Fortress + 1 Unit in Gondor. Move quest 2 spaces.",
 };
+
+const LANDMARK_NAMES: Record<string, string> = {
+  "LM-01": "Barad-Dur",
+  "LM-02": "Bree",
+  "LM-03": "Erebor",
+  "LM-04": "Grey Havens",
+  "LM-05": "Helm's Deep",
+  "LM-06": "Isengard",
+  "LM-07": "Minas Tirith",
+};
+
+export function getLandmarkDef(id: string): { id: string; name: string; effect: string } | undefined {
+  const name = LANDMARK_NAMES[id];
+  const effect = LANDMARK_EFFECTS[id];
+  if (!name || !effect) return undefined;
+  return { id, name, effect };
+}

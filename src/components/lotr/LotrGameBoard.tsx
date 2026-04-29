@@ -12,7 +12,7 @@ import BonusPanel from "./BonusPanel";
 import LandmarkPanel from "./LandmarkPanel";
 import AlliancePanel from "./AlliancePanel";
 import AllianceEffectPanel from "./AllianceEffectPanel";
-import { getCardDef } from "@/lib/lotrCards";
+import { getCardDef, getLandmarkDef } from "@/lib/lotrCards";
 
 interface Props {
   state: LotrGameState;
@@ -104,6 +104,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
         isDraw={isDraw}
         winnerSide={winnerSide}
         mySide={mySide}
+        players={players}
       />
 
       {!isFinished && isManeuverPhase && (
@@ -179,48 +180,51 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
 
       <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 overflow-auto">
         <div className="lg:w-48 flex-shrink-0 space-y-3">
-          {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} playerName={players?.find(p => p.side === mySide)?.username} takenLandmarkIds={me.takenLandmarkIds} />}
-          {opponent && <PlayerPanel player={opponent} isCurrentTurn={!isMyTurn} isOpponent playerName={players?.find(p => p.side !== mySide)?.username} takenLandmarkIds={opponent.takenLandmarkIds} />}
+          {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} playerName={players?.find(p => p.side === mySide)?.username} takenLandmarks={(me.takenLandmarkIds ?? []).map(getLandmarkDef).filter((d): d is { id: string; name: string; effect: string } => !!d)} />}
+          {opponent && <PlayerPanel player={opponent} isCurrentTurn={!isMyTurn} isOpponent playerName={players?.find(p => p.side !== mySide)?.username} takenLandmarks={(opponent.takenLandmarkIds ?? []).map(getLandmarkDef).filter((d): d is { id: string; name: string; effect: string } => !!d)} />}
         </div>
 
-        <div className="flex-1 flex flex-col gap-3 min-w-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="bg-gray-800 rounded-lg p-3">
-              <RegionMap
-                regions={state.regions}
-                mySide={mySide}
-                isManeuverPhase={!isFinished && isManeuverPhase}
-                pendingManeuvers={pendingManeuvers}
-                onResolveManeuver={onResolveManeuver}
-                isBonusPhase={!isFinished && isBonusPhase}
-                bonusPosition={bonusPosition}
-                onResolveBonus={onResolveBonus}
-                isLandmarkMovement={!isFinished && isLandmarkMovement}
-                onResolveLandmark={onResolveLandmark}
-              />
-            </div>
-            <QuestTrack questTrack={state.questTrack} bonusPosition={state.bonusPosition} />
+        <div className="flex-1 flex flex-col lg:flex-row gap-3 min-w-0">
+          <div className="flex-1">
+            <CardPyramid
+              cardSlots={state.cardSlots}
+              currentChapter={state.currentChapter}
+              isMyTurn={!inInteractivePhase && isMyTurn}
+              onTakeCard={onTakeCard}
+              myPlayedCards={myPlayedCards}
+              myCoins={me?.coins ?? 0}
+              myAllianceTokenIds={me?.allianceTokenIds}
+            />
           </div>
+          <div className="flex-1 flex flex-col gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="bg-gray-800 rounded-lg p-3">
+                <RegionMap
+                  regions={state.regions}
+                  mySide={mySide}
+                  isManeuverPhase={!isFinished && isManeuverPhase}
+                  pendingManeuvers={pendingManeuvers}
+                  onResolveManeuver={onResolveManeuver}
+                  isBonusPhase={!isFinished && isBonusPhase}
+                  bonusPosition={bonusPosition}
+                  onResolveBonus={onResolveBonus}
+                  isLandmarkMovement={!isFinished && isLandmarkMovement}
+                  onResolveLandmark={onResolveLandmark}
+                />
+              </div>
+              <QuestTrack questTrack={state.questTrack} bonusPosition={state.bonusPosition} />
+            </div>
 
-          <LandmarkTiles
-            landmarks={state.landmarkTiles}
-            isMyTurn={!inInteractivePhase && isMyTurn}
-            myCoins={me?.coins ?? 0}
-            myPlayedCards={myPlayedCards}
-            fortressCount={fortressCount}
-            onTakeLandmark={onTakeLandmark}
-            myAllianceTokenIds={me?.allianceTokenIds}
-          />
-
-          <CardPyramid
-            cardSlots={state.cardSlots}
-            currentChapter={state.currentChapter}
-            isMyTurn={!inInteractivePhase && isMyTurn}
-            onTakeCard={onTakeCard}
-            myPlayedCards={myPlayedCards}
-            myCoins={me?.coins ?? 0}
-            myAllianceTokenIds={me?.allianceTokenIds}
-          />
+            <LandmarkTiles
+              landmarks={state.landmarkTiles}
+              isMyTurn={!inInteractivePhase && isMyTurn}
+              myCoins={me?.coins ?? 0}
+              myPlayedCards={myPlayedCards}
+              fortressCount={fortressCount}
+              onTakeLandmark={onTakeLandmark}
+              myAllianceTokenIds={me?.allianceTokenIds}
+            />
+          </div>
         </div>
       </div>
     </div>
