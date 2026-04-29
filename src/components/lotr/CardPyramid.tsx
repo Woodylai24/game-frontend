@@ -182,7 +182,7 @@ function CardActionModal({ card, canChain, canAfford, myPlayedCards, myAllianceT
           </button>
           <button onClick={() => onConfirm("DISCARD")}
             className="flex-1 bg-gray-600 hover:bg-gray-700 py-2 rounded font-bold text-sm">
-            Discard (+{card.chapter} 🪙)
+            Discard (+{myAllianceTokenIds?.includes("AT-HUMANS-3") ? card.chapter * 2 : card.chapter} 🪙)
           </button>
           <button onClick={onClose} className="px-3 bg-gray-700 hover:bg-gray-600 rounded text-sm">✕</button>
         </div>

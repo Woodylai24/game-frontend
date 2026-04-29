@@ -95,7 +95,7 @@ export default function PlayerPanel({ player, isCurrentTurn }: Props) {
           ))}
           {player.allianceTokenIds.includes("AT-HOBBITS-1") && (
             <div className="flex items-center gap-0.5" title="Eagle (Hobbits 1)">
-              <span className="w-5 h-5 flex items-center justify-center text-base">🦅</span>
+              <img src="/lotr/Icons/Races/Eagle.png" alt="Eagle" className="w-5 h-5 rounded" title="Eagle" />
             </div>
           )}
         </div>

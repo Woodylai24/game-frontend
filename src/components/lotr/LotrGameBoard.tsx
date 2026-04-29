@@ -105,7 +105,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         mySide={mySide}
       />
 
-      {isManeuverPhase && (
+      {!isFinished && isManeuverPhase && (
         <div className="px-3 pt-3">
           <ManeuverPanel
             pendingManeuvers={pendingManeuvers}
@@ -114,7 +114,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         </div>
       )}
 
-      {isBonusPhase && (
+      {!isFinished && isBonusPhase && (
         <div className="px-3 pt-3">
           <BonusPanel
             bonusPosition={bonusPosition}
@@ -123,7 +123,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         </div>
       )}
 
-      {isLandmarkPhase && !isLandmarkMovement && (
+      {!isFinished && isLandmarkPhase && !isLandmarkMovement && (
         <div className="px-3 pt-3">
           <LandmarkPanel
             subPhase={landmarkSubPhase ?? ""}
@@ -138,7 +138,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         </div>
       )}
 
-      {isLandmarkMovement && (
+      {!isFinished && isLandmarkMovement && (
         <div className="px-3 pt-3">
           <LandmarkPanel
             subPhase="MOVEMENT"
@@ -148,7 +148,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         </div>
       )}
 
-      {state.alliancePhase && (
+      {!isFinished && state.alliancePhase && (
         <div className="px-3 pt-3">
           <AlliancePanel
             triggerType={state.allianceTriggerType ?? ""}
@@ -160,7 +160,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
         </div>
       )}
 
-      {state.allianceEffectPhase && (
+      {!isFinished && state.allianceEffectPhase && (
         <div className="px-3 pt-3">
           <AllianceEffectPanel
             effectType={state.allianceEffectType ?? ""}
@@ -188,13 +188,13 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
               <RegionMap
                 regions={state.regions}
                 mySide={mySide}
-                isManeuverPhase={isManeuverPhase}
+                isManeuverPhase={!isFinished && isManeuverPhase}
                 pendingManeuvers={pendingManeuvers}
                 onResolveManeuver={onResolveManeuver}
-                isBonusPhase={isBonusPhase}
+                isBonusPhase={!isFinished && isBonusPhase}
                 bonusPosition={bonusPosition}
                 onResolveBonus={onResolveBonus}
-                isLandmarkMovement={isLandmarkMovement}
+                isLandmarkMovement={!isFinished && isLandmarkMovement}
                 onResolveLandmark={onResolveLandmark}
               />
             </div>
