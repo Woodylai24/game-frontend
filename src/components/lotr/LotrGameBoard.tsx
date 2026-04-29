@@ -19,6 +19,7 @@ interface Props {
   isMyTurn: boolean;
   mySide: LotrPlayerSide | undefined;
   gameStatus: string;
+  players?: { username: string; side: string }[];
   onTakeCard: (slotId: number, playOrDiscard: "PLAY" | "DISCARD", chosenRegion?: string) => void;
   onTakeLandmark: (tileId: string) => void;
   isManeuverPhase: boolean;
@@ -39,7 +40,7 @@ interface Props {
   onResolveAllianceEffect: (data: Record<string, unknown>) => void;
 }
 
-export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance, isAllianceEffectPhase, onResolveAllianceEffect }: Props) {
+export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, players, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance, isAllianceEffectPhase, onResolveAllianceEffect }: Props) {
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
   const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
 
@@ -178,8 +179,8 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
 
       <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 overflow-auto">
         <div className="lg:w-48 flex-shrink-0 space-y-3">
-          {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} />}
-          {opponent && <PlayerPanel player={opponent} isCurrentTurn={!isMyTurn} isOpponent />}
+          {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} playerName={players?.find(p => p.side === mySide)?.username} />}
+          {opponent && <PlayerPanel player={opponent} isCurrentTurn={!isMyTurn} isOpponent playerName={players?.find(p => p.side !== mySide)?.username} />}
         </div>
 
         <div className="flex-1 flex flex-col gap-3 min-w-0">

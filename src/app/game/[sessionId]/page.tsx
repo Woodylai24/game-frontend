@@ -183,6 +183,7 @@ export default function GamePage() {
           isMyTurn={lotr.isMyTurn}
           mySide={lotr.mySide as "FELLOWSHIP" | "SAURON" | undefined}
           gameStatus={lotr.gameStatus}
+          players={lotr.players}
           onTakeCard={lotr.takeCard}
           onTakeLandmark={lotr.takeLandmark}
           isManeuverPhase={lotr.isManeuverPhase}

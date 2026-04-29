@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { LotrPlayerState, LotrCardColor, LotrRace, LotrSkill, getCardImagePath, getRaceIconPath, getSkillIconPath } from "@/types/lotr";
 import { getCardDef, getTokenDef } from "@/lib/lotrCards";
 
@@ -9,9 +10,10 @@ interface Props {
   player: LotrPlayerState;
   isCurrentTurn: boolean;
   isOpponent?: boolean;
+  playerName?: string;
 }
 
-export default function PlayerPanel({ player, isCurrentTurn }: Props) {
+export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerName }: Props) {
   const sortedCards = [...player.playedCardIds].sort((a, b) => {
     const da = getCardDef(a);
     const db = getCardDef(b);
@@ -32,6 +34,10 @@ export default function PlayerPanel({ player, isCurrentTurn }: Props) {
     }
   }
 
+  const [cardsExpanded, setCardsExpanded] = useState(false);
+  const cardExposedHeight = 120;
+  const cardOverlap = 25;
+
   const fellowshipColors = player.side === "FELLOWSHIP"
     ? "bg-blue-900/30 border-blue-500" : "bg-red-900/30 border-red-500";
 
@@ -39,9 +45,9 @@ export default function PlayerPanel({ player, isCurrentTurn }: Props) {
     <div className={`rounded-lg border-2 p-3 ${isCurrentTurn ? "ring-2 ring-yellow-400" : ""} ${fellowshipColors}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm font-bold text-white">
-          {player.side === "FELLOWSHIP" ? "🗡️ Fellowship" : "👁️ Sauron"}
+          {player.side === "FELLOWSHIP" ? "🗡️ Fellowship" : "👁️ Sauron"}{playerName ? ` (${playerName})` : ""}
         </div>
-        {isCurrentTurn && <div className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full font-bold">YOUR TURN</div>}
+        {isCurrentTurn && <div className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full font-bold">{isOpponent ? "THEIR TURN" : "YOUR TURN"}</div>}
       </div>
 
       <div className="flex items-center gap-2 mb-3">
@@ -66,21 +72,36 @@ export default function PlayerPanel({ player, isCurrentTurn }: Props) {
       )}
 
       <div>
-        <div className="text-[10px] text-gray-400 mb-1">Played Cards ({player.playedCardIds.length})</div>
-        <div className="relative" style={{ height: sortedCards.length > 0 ? `${40 + (sortedCards.length - 1) * 22}px` : "0px" }}>
-          {sortedCards.map((cardId, i) => {
-            const def = getCardDef(cardId);
-            if (!def) return null;
-            return (
-              <div key={cardId}
-                className="absolute left-0 right-0 overflow-hidden rounded border border-gray-600"
-                style={{ top: `${i * 22}px`, height: "40px" }}>
-                <img src={getCardImagePath(def.id, def.chapter)} alt={def.name}
-                  className="w-full h-auto object-contain" style={{ marginTop: "-2px" }} />
-              </div>
-            );
-          })}
-        </div>
+        <button
+          onClick={() => setCardsExpanded(e => !e)}
+          className="flex items-center gap-1 text-[10px] text-gray-400 mb-1 hover:text-gray-200 w-full text-left"
+        >
+          <span className="text-[8px]">{cardsExpanded ? "▼" : "▶"}</span>
+          Played Cards ({player.playedCardIds.length})
+        </button>
+        {cardsExpanded && sortedCards.length > 0 && (
+          <div
+            className="relative overflow-hidden"
+            style={{ height: `${cardExposedHeight + (sortedCards.length - 1) * cardOverlap}px` }}
+          >
+            {sortedCards.map((cardId, i) => {
+              const def = getCardDef(cardId);
+              if (!def) return null;
+              return (
+                <div key={cardId}
+                  className="absolute overflow-hidden rounded border border-gray-600"
+                  style={{
+                    top: `${i * cardOverlap}px`,
+                    height: `${cardExposedHeight}px`,
+                    width: "80px",
+                  }}>
+                  <img src={getCardImagePath(def.id, def.chapter)} alt={def.name}
+                    className="w-full h-full object-cover object-top" />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="mt-3">
