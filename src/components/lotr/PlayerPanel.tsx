@@ -54,23 +54,6 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
         <div className="text-yellow-400 font-bold text-lg">🪙 {player.coins}</div>
       </div>
 
-      {player.allianceTokenIds.length > 0 && (
-        <div className="mb-2">
-          <div className="text-[10px] text-gray-400 mb-1">Alliances</div>
-          <div className="flex flex-wrap gap-1">
-            {player.allianceTokenIds.map(id => {
-              const def = getTokenDef(id);
-              return (
-                <span key={id} className="flex items-center gap-1 text-[10px] bg-purple-800 text-purple-200 px-1.5 py-0.5 rounded">
-                  {def && <img src={getRaceIconPath(def.race as LotrRace)} alt={def.race} className="w-3 h-3 rounded" />}
-                  {def ? def.name : id.replace("AT-","")}
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       <div>
         <button
           onClick={() => setCardsExpanded(e => !e)}
@@ -103,6 +86,27 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
           </div>
         )}
       </div>
+
+      {player.allianceTokenIds.length > 0 && (
+        <div className="mt-2">
+          <div className="text-[10px] text-gray-400 mb-1">Alliances</div>
+          <div className="flex flex-wrap gap-1">
+            {player.allianceTokenIds.map(id => {
+              const def = getTokenDef(id);
+              const parts = id.split("-");
+              const race = parts[1] || "";
+              const num = parts[2] || "";
+              const raceLabel = race.charAt(0) + race.slice(1).toLowerCase();
+              const imgPath = `/lotr/alliances/${raceLabel}_${num}.png`;
+              const tooltip = def ? `${def.name}: ${def.effect}` : id;
+              return (
+                <img key={id} src={imgPath} alt={def?.name ?? id}
+                  className="w-8 h-8 rounded" title={tooltip} />
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="mt-3">
         <div className="text-[10px] text-gray-400 mb-1">Race Symbols</div>
@@ -149,6 +153,26 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
           </div>
         </div>
       )}
+
+      {(() => {
+        const chainSymbols = new Set<string>();
+        for (const cardId of player.playedCardIds) {
+          const def = getCardDef(cardId);
+          if (def?.chainingSymbol) chainSymbols.add(def.chainingSymbol);
+        }
+        if (chainSymbols.size === 0) return null;
+        return (
+          <div className="mt-2">
+            <div className="text-[10px] text-gray-400 mb-1">Chaining Symbols</div>
+            <div className="flex flex-wrap gap-1">
+              {[...chainSymbols].map(sym => (
+                <img key={sym} src={`/lotr/Chains/${sym.toLowerCase()}.png`} alt={sym}
+                  className="w-6 h-6 rounded" title={sym} />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
