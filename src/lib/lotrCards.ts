@@ -52,6 +52,10 @@ export function resolveSkillsWithOptions(
   let totalCoinSubstitution = covered.filter(c => !c).length;
 
   if (allianceTokenIds?.includes("AT-ELVES-3") && totalCoinSubstitution > 0) {
+    const firstUncovered = covered.indexOf(false);
+    if (firstUncovered !== -1) {
+      covered[firstUncovered] = true;
+    }
     totalCoinSubstitution -= 1;
   }
 

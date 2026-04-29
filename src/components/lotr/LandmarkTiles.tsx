@@ -11,17 +11,21 @@ interface Props {
   myPlayedCards: string[];
   fortressCount: number;
   onTakeLandmark: (tileId: string) => void;
+  myAllianceTokenIds?: string[];
 }
 
-export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCards, fortressCount, onTakeLandmark }: Props) {
+export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCards, fortressCount, onTakeLandmark, myAllianceTokenIds }: Props) {
   const [selectedTile, setSelectedTile] = useState<LotrLandmarkTileDef | null>(null);
 
   const faceUpTiles = landmarks.filter(t => t.faceUp);
   const faceDownCount = landmarks.filter(t => !t.faceUp).length;
 
+  const hasDwarves1 = myAllianceTokenIds?.includes("AT-DWARVES-1") ?? false;
+
   const getCoinCost = (tile: LotrLandmarkTileDef) => {
-    const resolved = resolveSkillsWithOptions(myPlayedCards, tile.skillCost as LotrSkill[]);
-    return fortressCount + resolved.totalCoinSubstitution;
+    const resolved = resolveSkillsWithOptions(myPlayedCards, tile.skillCost as LotrSkill[], myAllianceTokenIds);
+    const extraCoinCost = hasDwarves1 ? 0 : fortressCount;
+    return extraCoinCost + resolved.totalCoinSubstitution;
   };
 
   const canAfford = (tile: LotrLandmarkTileDef) => {
@@ -58,7 +62,9 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCa
         <LandmarkModal
           tile={selectedTile}
           myPlayedCards={myPlayedCards}
+          myAllianceTokenIds={myAllianceTokenIds}
           fortressCount={fortressCount}
+          hasDwarves1={hasDwarves1}
           canAfford={canAfford(selectedTile)}
           coinCost={getCoinCost(selectedTile)}
           onClose={() => setSelectedTile(null)}
@@ -72,16 +78,20 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCa
   );
 }
 
-function LandmarkModal({ tile, myPlayedCards, fortressCount, canAfford, coinCost, onClose, onTake }: {
+function LandmarkModal({ tile, myPlayedCards, myAllianceTokenIds, fortressCount, hasDwarves1, canAfford, coinCost, onClose, onTake }: {
   tile: LotrLandmarkTileDef;
   myPlayedCards: string[];
+  myAllianceTokenIds?: string[];
   fortressCount: number;
+  hasDwarves1: boolean;
   canAfford: boolean;
   coinCost: number;
   onClose: () => void;
   onTake: () => void;
 }) {
-  const resolved = resolveSkillsWithOptions(myPlayedCards, tile.skillCost as LotrSkill[]);
+  const resolved = resolveSkillsWithOptions(myPlayedCards, tile.skillCost as LotrSkill[], myAllianceTokenIds);
+
+  const extraCoinCost = hasDwarves1 ? 0 : fortressCount;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={onClose}>
@@ -107,8 +117,11 @@ function LandmarkModal({ tile, myPlayedCards, fortressCount, canAfford, coinCost
                 </div>
               ))
             }
-            {fortressCount > 0 && (
-              <span className="text-yellow-400 text-sm">🪙 {fortressCount} (fortresses)</span>
+            {extraCoinCost > 0 && (
+              <span className="text-yellow-400 text-sm">🪙 {extraCoinCost} (fortresses)</span>
+            )}
+            {hasDwarves1 && fortressCount > 0 && (
+              <span className="text-green-400 text-[10px]">Dwarves 1: fortress cost ignored</span>
             )}
           </div>
           {coinCost > 0 && (

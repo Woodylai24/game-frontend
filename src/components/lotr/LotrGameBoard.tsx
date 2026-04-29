@@ -208,6 +208,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, onT
             myPlayedCards={myPlayedCards}
             fortressCount={fortressCount}
             onTakeLandmark={onTakeLandmark}
+            myAllianceTokenIds={me?.allianceTokenIds}
           />
 
           <CardPyramid
