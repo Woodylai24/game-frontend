@@ -179,8 +179,8 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
 
       <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 overflow-auto">
         <div className="lg:w-48 flex-shrink-0 space-y-3">
-          {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} playerName={players?.find(p => p.side === mySide)?.username} />}
-          {opponent && <PlayerPanel player={opponent} isCurrentTurn={!isMyTurn} isOpponent playerName={players?.find(p => p.side !== mySide)?.username} />}
+          {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} playerName={players?.find(p => p.side === mySide)?.username} takenLandmarkIds={me.takenLandmarkIds} />}
+          {opponent && <PlayerPanel player={opponent} isCurrentTurn={!isMyTurn} isOpponent playerName={players?.find(p => p.side !== mySide)?.username} takenLandmarkIds={opponent.takenLandmarkIds} />}
         </div>
 
         <div className="flex-1 flex flex-col gap-3 min-w-0">

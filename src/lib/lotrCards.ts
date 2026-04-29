@@ -182,3 +182,13 @@ export const ALLIANCE_TOKENS: LotrAllianceTokenDef[] = [
 
 const tokenMap = new Map(ALLIANCE_TOKENS.map(t => [t.id, t]));
 export function getTokenDef(id: string): LotrAllianceTokenDef | undefined { return tokenMap.get(id); }
+
+export const LANDMARK_EFFECTS: Record<string, string> = {
+  "LM-01": "Place 1 Fortress in Mordor. Take all discard cards, secretly choose 1, play it for free.",
+  "LM-02": "Place 1 Fortress + 2 Units in Arnor. Complete 2 movements on the board.",
+  "LM-03": "Place 1 Fortress in Rhovanion. Take 5 coins from reserve. Complete 1 movement.",
+  "LM-04": "Place 1 Fortress in Lindon. Take top 2 tokens of any Race, reveal, keep 1, return other.",
+  "LM-05": "Place 1 Fortress + 3 Units in Rohan.",
+  "LM-06": "Place 1 Fortress in Enedwaith. Discard 1 Grey card from opponent's play area. Move quest 1 space.",
+  "LM-07": "Place 1 Fortress + 1 Unit in Gondor. Move quest 2 spaces.",
+};
