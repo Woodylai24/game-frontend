@@ -106,7 +106,7 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
               {[...takenLandmarkIds!].map((id, i) => (
                 <div key={id}
                   className="absolute overflow-hidden rounded border border-gray-600"
-                  style={{ top: `${i * 25}px`, height: "100px", width: "100px" }}>
+                  style={{ top: `${(takenLandmarkIds!.length - 1 - i) * 25}px`, height: "100px", width: "100px", zIndex: i }}>
                   <img src={getLandmarkImagePath(id)} alt={id}
                     className="w-full h-full object-cover object-bottom" title={LANDMARK_EFFECTS[id] ?? id} />
                 </div>
