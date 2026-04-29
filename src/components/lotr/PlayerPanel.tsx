@@ -103,10 +103,10 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
               className="relative overflow-hidden"
               style={{ height: `${100 + (takenLandmarkIds!.length - 1) * 25}px` }}
             >
-              {[...takenLandmarkIds!].reverse().map((id, i) => (
+              {[...takenLandmarkIds!].map((id, i) => (
                 <div key={id}
                   className="absolute overflow-hidden rounded border border-gray-600"
-                  style={{ top: `${i * 25}px`, height: "100px", width: "80px" }}>
+                  style={{ top: `${i * 25}px`, height: "100px", width: "100px" }}>
                   <img src={getLandmarkImagePath(id)} alt={id}
                     className="w-full h-full object-cover object-bottom" title={LANDMARK_EFFECTS[id] ?? id} />
                 </div>
