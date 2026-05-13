@@ -135,8 +135,8 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
   };
 
   return (
-    <div className="relative w-full" style={{ paddingBottom: "60%" }}>
-      <svg viewBox="0 0 100 90" className="absolute inset-0 w-full h-full">
+    <div className="relative w-full" style={{ paddingBottom: "100%" }}>
+      <svg viewBox="0 0 85 90" className="absolute inset-0 w-full h-full">
         {Object.entries(REGION_ADJACENCY).map(([from, adj]) =>
           adj.map(to => {
             const p1 = REGION_POSITIONS[from as LotrRegion];

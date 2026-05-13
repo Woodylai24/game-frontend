@@ -61,7 +61,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                   key={slot.id}
                   onClick={() => isAvailable && isMyTurn && setSelectedSlot(slot)}
                   disabled={!isAvailable || !isMyTurn}
-                  className={`w-[120px] h-[180px] sm:w-[140px] sm:h-[210px] rounded border-2 text-[8px] sm:text-[10px] transition-all overflow-hidden relative
+                  className={`w-[80px] h-[120px] sm:w-[60px] sm:h-[90px] rounded border-2 text-[8px] sm:text-[10px] transition-all overflow-hidden relative
                     ${!slot.cardDefId ? "border-gray-700 bg-gray-700/30 opacity-30" :
                       !slot.faceUp ? "border-gray-600 bg-gray-700" :
                       isAvailable && isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
@@ -193,12 +193,10 @@ function CardActionModal({ card, canChain, canAfford, myPlayedCards, myAllianceT
 
 interface PyramidRow {
   slots: (LotrCardSlot | null)[];
-  halfOffset: boolean;
 }
 
 function getRows(slots: LotrCardSlot[], chapter: number): PyramidRow[] {
   const rowSizes = chapter === 1 ? [2, 3, 4, 5, 6] : chapter === 2 ? [6, 5, 4, 3, 2] : [2, 3, 4, 2, 4, 3, 2];
-  const maxRow = Math.max(...rowSizes);
   const rows: PyramidRow[] = [];
   let idx = 0;
   for (let ri = 0; ri < rowSizes.length; ri++) {
@@ -208,19 +206,13 @@ function getRows(slots: LotrCardSlot[], chapter: number): PyramidRow[] {
     if (chapter === 3 && ri === 3) {
       if (idx < slots.length) rowSlots.push(slots[idx++]);
       rowSlots.push(null);
-      rowSlots.push(null);
       if (idx < slots.length) rowSlots.push(slots[idx++]);
-      rows.push({ slots: rowSlots, halfOffset: false });
+      rows.push({ slots: rowSlots });
     } else {
-      const pad = maxRow - size;
-      const leftPad = Math.floor(pad / 2);
-      const rightPad = Math.ceil(pad / 2);
-      for (let p = 0; p < leftPad; p++) rowSlots.push(null);
       for (let i = 0; i < size; i++) {
         if (idx < slots.length) rowSlots.push(slots[idx++]);
       }
-      for (let p = 0; p < rightPad; p++) rowSlots.push(null);
-      rows.push({ slots: rowSlots, halfOffset: ri % 2 === 1 });
+      rows.push({ slots: rowSlots });
     }
   }
   return rows;
