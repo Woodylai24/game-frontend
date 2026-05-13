@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   GameRoom,
@@ -29,6 +29,7 @@ export default function RoomPage() {
   >([]);
   const [intentionalLeave, setIntentionalLeave] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
+  const joinInProgressRef = useRef(false);
 
   const username = user?.username || "";
 
@@ -44,6 +45,11 @@ export default function RoomPage() {
         setError("Not authenticated");
         return;
       }
+
+      if (joinInProgressRef.current) {
+        return;
+      }
+      joinInProgressRef.current = true;
 
       try {
         if (!webSocketService.isConnected()) {
@@ -148,6 +154,7 @@ export default function RoomPage() {
                 setUnsubscribeFunctions(unsubscribes);
               } else {
                 // Join failed (e.g., wrong password) — clean up subscriptions
+                joinInProgressRef.current = false;
                 unsubscribes.forEach((fn) => fn());
                 setError(res.error || res.message || "Failed to join room");
               }
@@ -164,6 +171,7 @@ export default function RoomPage() {
         );
       } catch (error) {
         console.error("Failed to connect and join room:", error);
+        joinInProgressRef.current = false;
         setError("Failed to connect to room");
       }
     },
@@ -234,6 +242,7 @@ export default function RoomPage() {
     if (room) {
       setIntentionalLeave(true);
       setHasJoined(false);
+      joinInProgressRef.current = false;
       webSocketService.leaveRoom(room.id, username);
     }
     router.push("/");
