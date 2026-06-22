@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   GameRoom,
@@ -29,6 +29,9 @@ export default function RoomPage() {
   >([]);
   const [intentionalLeave, setIntentionalLeave] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
+  // Ref guard: prevents double join during React Strict Mode's synchronous
+  // mount→unmount→remount cycle (setHasJoined is async, arrives too late)
+  const joinInitiatedRef = useRef(false);
 
   const username = user?.username || "";
 
@@ -199,7 +202,8 @@ export default function RoomPage() {
   );
 
   useEffect(() => {
-    if (username && !intentionalLeave && !hasJoined) {
+    if (username && !intentionalLeave && !hasJoined && !joinInitiatedRef.current) {
+      joinInitiatedRef.current = true;
       connectAndJoinRoom();
     }
 
@@ -234,6 +238,7 @@ export default function RoomPage() {
     if (room) {
       setIntentionalLeave(true);
       setHasJoined(false);
+      joinInitiatedRef.current = false;
       webSocketService.leaveRoom(room.id, username);
     }
     router.push("/");
