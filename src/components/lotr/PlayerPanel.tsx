@@ -47,7 +47,7 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
     <div className={`rounded-lg border-2 p-3 ${isCurrentTurn ? "ring-2 ring-yellow-400" : ""} ${fellowshipColors}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="text-sm font-bold text-white">
-          {player.side === "FELLOWSHIP" ? "🗡️ Fellowship" : "👁️ Sauron"}{playerName ? ` (${playerName})` : ""}
+          {playerName}{!isOpponent ? " (You)" : ""}
         </div>
         {isCurrentTurn && <div className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full font-bold">{isOpponent ? "THEIR TURN" : "YOUR TURN"}</div>}
       </div>

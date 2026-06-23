@@ -15,14 +15,8 @@ interface Props {
 
 export default function InfoBar({ currentChapter, currentTurnPlayer, isMyTurn, isFinished, isDraw, winnerSide, mySide, players }: Props) {
   const chapterLabel = currentChapter > 3 ? "Game Finished" : `Chapter ${["I", "II", "III"][currentChapter - 1] || "?"}`;
-  const sideLabel = (side: LotrPlayerSide) =>
-    side === "FELLOWSHIP" ? "Fellowship" : "Sauron";
   const playerName = (side: LotrPlayerSide) =>
-    players?.find(p => p.side === side)?.username;
-  const sideWithName = (side: LotrPlayerSide) => {
-    const name = playerName(side);
-    return name ? `${sideLabel(side)} (${name})` : sideLabel(side);
-  };
+    players?.find(p => p.side === side)?.username ?? (side === "FELLOWSHIP" ? "Fellowship" : "Sauron");
 
   return (
     <div className="bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
@@ -35,17 +29,17 @@ export default function InfoBar({ currentChapter, currentTurnPlayer, isMyTurn, i
             ) : winnerSide === mySide ? (
               <span className="text-green-400">Victory!</span>
             ) : (
-              <span className="text-red-400">Defeat — {winnerSide ? sideWithName(winnerSide) : "?"} wins</span>
+              <span className="text-red-400">Defeat — {winnerSide ? playerName(winnerSide) : "?"} wins</span>
             )}
           </div>
         ) : isMyTurn ? (
-          <div className="text-sm font-bold text-green-400 animate-pulse">⚔️ Your Turn</div>
+          <div className="text-sm font-bold text-green-400 animate-pulse">Your Turn</div>
         ) : (
-          <div className="text-sm text-gray-400">Waiting for {sideWithName(currentTurnPlayer)}...</div>
+          <div className="text-sm text-gray-400">Waiting for {playerName(currentTurnPlayer)}...</div>
         )}
       </div>
       <div className="text-xs text-gray-500">
-        Turn: {playerName(currentTurnPlayer) ?? sideLabel(currentTurnPlayer)}
+        Turn: {playerName(currentTurnPlayer)}
       </div>
     </div>
   );

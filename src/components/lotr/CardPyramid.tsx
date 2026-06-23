@@ -80,45 +80,39 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
         </div>
       </div>
 
-      {/* Desktop: auto-size cards to fit container width */}
+      {/* Desktop: fixed-size cards */}
       <div className="hidden lg:flex flex-col items-center gap-1">
-        {rows.map((row, ri) => {
-          const maxRowSize = Math.max(...rows.map(r => r.slots.length));
-          return (
-            <div key={ri}
-              className="grid gap-1 w-full"
-              style={{ gridTemplateColumns: `repeat(${row.slots.length}, 1fr)` }}
-            >
-              {row.slots.map((slot, si) => {
-                if (!slot) {
-                  return <div key={`gap-${ri}-${si}`} className="aspect-[2/3] rounded" />;
-                }
-                const isAvailable = slot.cardDefId && slot.coveredBy.length === 0;
-                const card = slot.cardDefId ? getCardDef(slot.cardDefId) : null;
+        {rows.map((row, ri) => (
+          <div key={ri} className="flex gap-1 justify-center">
+            {row.slots.map((slot, si) => {
+              if (!slot) {
+                return <div key={`gap-${ri}-${si}`} className="w-[90px] h-[135px]" />;
+              }
+              const isAvailable = slot.cardDefId && slot.coveredBy.length === 0;
+              const card = slot.cardDefId ? getCardDef(slot.cardDefId) : null;
 
-                return (
-                  <button
-                    key={slot.id}
-                    onClick={() => isAvailable && isMyTurn && setSelectedSlot(slot)}
-                    disabled={!isAvailable || !isMyTurn}
-                    className={`aspect-[2/3] rounded border-2 text-[10px] transition-all overflow-hidden relative
-                      ${!slot.cardDefId ? "border-gray-700 bg-gray-700/30 opacity-30" :
-                        !slot.faceUp ? "border-gray-600 bg-gray-700" :
-                        isAvailable && isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
-                        "border-gray-500 opacity-60"}
-                    `}
-                  >
-                    {slot.cardDefId && slot.faceUp && card ? (
-                      <img src={getCardImagePath(card.id, card.chapter)} alt={card.name} className="w-full h-full object-contain" />
-                    ) : !slot.faceUp ? (
-                      <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-contain" />
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })}
+              return (
+                <button
+                  key={slot.id}
+                  onClick={() => isAvailable && isMyTurn && setSelectedSlot(slot)}
+                  disabled={!isAvailable || !isMyTurn}
+                  className={`w-[90px] h-[135px] rounded border-2 text-[10px] transition-all overflow-hidden relative
+                    ${!slot.cardDefId ? "border-gray-700 bg-gray-700/30 opacity-30" :
+                      !slot.faceUp ? "border-gray-600 bg-gray-700" :
+                      isAvailable && isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
+                      "border-gray-500 opacity-60"}
+                  `}
+                >
+                  {slot.cardDefId && slot.faceUp && card ? (
+                    <img src={getCardImagePath(card.id, card.chapter)} alt={card.name} className="w-full h-full object-contain" />
+                  ) : !slot.faceUp ? (
+                    <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-contain" />
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       {selectedSlot && availableCard && (
