@@ -112,6 +112,13 @@ export interface LotrGameState {
   removeFortressPhasePlayer?: LotrPlayerSide | null;
   placeUnitPhase?: boolean;
   placeUnitPhasePlayer?: LotrPlayerSide | null;
+  gameLog?: LotrLogEntry[];
+}
+
+export interface LotrLogEntry {
+  side: LotrPlayerSide;
+  action: string;
+  data: Record<string, any>;
 }
 
 export interface LotrStateResponse {

@@ -7,6 +7,7 @@ import PlayerPanel from "./PlayerPanel";
 import CardPyramid from "./CardPyramid";
 import LandmarkTiles from "./LandmarkTiles";
 import InfoBar from "./InfoBar";
+import GameLogBar from "./GameLogBar";
 import ManeuverPanel from "./ManeuverPanel";
 import LandmarkPanel from "./LandmarkPanel";
 import AlliancePanel from "./AlliancePanel";
@@ -102,16 +103,23 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col">
-      <InfoBar
-        currentChapter={state.currentChapter}
-        currentTurnPlayer={state.currentTurnPlayer}
-        isMyTurn={isMyTurn}
-        isFinished={isFinished}
-        isDraw={isDraw}
-        winnerSide={winnerSide}
-        mySide={mySide}
-        players={players}
-      />
+      <div className="sticky top-0 z-40 bg-gray-950">
+        <InfoBar
+          currentChapter={state.currentChapter}
+          currentTurnPlayer={state.currentTurnPlayer}
+          isMyTurn={isMyTurn}
+          isFinished={isFinished}
+          isDraw={isDraw}
+          winnerSide={winnerSide}
+          mySide={mySide}
+          players={players}
+        />
+        <GameLogBar
+          gameLog={state.gameLog ?? []}
+          players={players}
+          mySide={mySide}
+        />
+      </div>
 
       {!isFinished && isManeuverPhase && (
         <div className="px-3 pt-3">
