@@ -49,7 +49,7 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
         <div className="text-sm font-bold text-white">
           {playerName}{!isOpponent ? " (You)" : ""}
         </div>
-        {isCurrentTurn && <div className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full font-bold">{isOpponent ? "THEIR TURN" : "YOUR TURN"}</div>}
+        {isCurrentTurn && <div className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full font-bold whitespace-nowrap shrink-0">{isOpponent ? "THEIR TURN" : "YOUR TURN"}</div>}
       </div>
 
       <div className="flex items-center gap-2 mb-3">
