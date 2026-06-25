@@ -98,6 +98,9 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
   const isLandmarkPhase = lotrState?.landmarkPhase === true && lotrState?.landmarkPlayer === mySide;
   const isAlliancePhase = lotrState?.alliancePhase === true && lotrState?.alliancePlayer === mySide;
   const isAllianceEffectPhase = lotrState?.allianceEffectPhase === true && lotrState?.allianceEffectPlayer === mySide;
+  const isPickDiscardPhase = lotrState?.pickDiscardPhase === true && lotrState?.pickDiscardPhasePlayer === mySide;
+  const isRemoveFortressPhase = lotrState?.removeFortressPhase === true && lotrState?.removeFortressPhasePlayer === mySide;
+  const isPlaceUnitPhase = lotrState?.placeUnitPhase === true && lotrState?.placeUnitPhasePlayer === mySide;
 
   const resolveManeuver = useCallback(async (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => {
     try {
@@ -132,6 +135,69 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
         if (targetRegion) body.targetRegion = targetRegion;
       }
       const res = await apiFetch(`/api/game-sessions/${sessionId}/lotr/resolve-bonus`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Action failed" }));
+        throw new Error(err.error || "Action failed");
+      }
+      const data: LotrStateResponse = await res.json();
+      setLotrState(data.parsedState);
+      setGameStatus(data.gameStatus);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Action failed");
+      setTimeout(() => setError(""), 3000);
+    }
+  }, [sessionId]);
+
+  const resolvePickDiscard = useCallback(async (action: string, cardDefId?: string) => {
+    try {
+      const body: Record<string, unknown> = { action };
+      if (cardDefId) body.cardDefId = cardDefId;
+      const res = await apiFetch(`/api/game-sessions/${sessionId}/lotr/resolve-pick-discard`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Action failed" }));
+        throw new Error(err.error || "Action failed");
+      }
+      const data: LotrStateResponse = await res.json();
+      setLotrState(data.parsedState);
+      setGameStatus(data.gameStatus);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Action failed");
+      setTimeout(() => setError(""), 3000);
+    }
+  }, [sessionId]);
+
+  const resolveRemoveFortress = useCallback(async (action: string, targetRegion?: string) => {
+    try {
+      const body: Record<string, unknown> = { action };
+      if (targetRegion) body.targetRegion = targetRegion;
+      const res = await apiFetch(`/api/game-sessions/${sessionId}/lotr/resolve-remove-fortress`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Action failed" }));
+        throw new Error(err.error || "Action failed");
+      }
+      const data: LotrStateResponse = await res.json();
+      setLotrState(data.parsedState);
+      setGameStatus(data.gameStatus);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Action failed");
+      setTimeout(() => setError(""), 3000);
+    }
+  }, [sessionId]);
+
+  const resolvePlaceUnit = useCallback(async (action: string, targetRegion?: string) => {
+    try {
+      const body: Record<string, unknown> = { action };
+      if (targetRegion) body.targetRegion = targetRegion;
+      const res = await apiFetch(`/api/game-sessions/${sessionId}/lotr/resolve-place-unit`, {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -211,5 +277,5 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
     }
   }, [sessionId]);
 
-  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, isLandmarkPhase, isAlliancePhase, isAllianceEffectPhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, resolveLandmark, resolveAlliance, resolveAllianceEffect, setError };
+  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, isLandmarkPhase, isAlliancePhase, isAllianceEffectPhase, isPickDiscardPhase, isRemoveFortressPhase, isPlaceUnitPhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, resolvePickDiscard, resolveRemoveFortress, resolvePlaceUnit, resolveLandmark, resolveAlliance, resolveAllianceEffect, setError };
 }

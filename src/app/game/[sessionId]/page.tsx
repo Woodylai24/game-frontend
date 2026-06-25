@@ -189,9 +189,13 @@ export default function GamePage() {
           isManeuverPhase={lotr.isManeuverPhase}
           pendingManeuvers={lotr.lotrState?.pendingManeuvers ?? []}
           onResolveManeuver={lotr.resolveManeuver}
-          isBonusPhase={lotr.isBonusPhase}
-          bonusPosition={lotr.lotrState?.bonusPosition ?? -1}
-          onResolveBonus={lotr.resolveBonus}
+          isPickDiscardPhase={lotr.isPickDiscardPhase}
+          isRemoveFortressPhase={lotr.isRemoveFortressPhase}
+          isPlaceUnitPhase={lotr.isPlaceUnitPhase}
+          resolvePickDiscard={lotr.resolvePickDiscard}
+          resolveRemoveFortress={lotr.resolveRemoveFortress}
+          resolvePlaceUnit={lotr.resolvePlaceUnit}
+          discardPile={lotr.lotrState?.discardPile ?? []}
           isLandmarkPhase={lotr.isLandmarkPhase}
           landmarkSubPhase={lotr.lotrState?.landmarkSubPhase ?? null}
           onResolveLandmark={lotr.resolveLandmark}

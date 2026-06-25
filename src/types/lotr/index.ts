@@ -106,6 +106,12 @@ export interface LotrGameState {
   allianceEffectSubPhase?: string | null;
   allianceEffectSelectedRegions?: string[];
   discardPile?: string[];
+  pickDiscardPhase?: boolean;
+  pickDiscardPhasePlayer?: LotrPlayerSide | null;
+  removeFortressPhase?: boolean;
+  removeFortressPhasePlayer?: LotrPlayerSide | null;
+  placeUnitPhase?: boolean;
+  placeUnitPhasePlayer?: LotrPlayerSide | null;
 }
 
 export interface LotrStateResponse {

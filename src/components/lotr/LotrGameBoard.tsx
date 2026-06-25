@@ -8,10 +8,12 @@ import CardPyramid from "./CardPyramid";
 import LandmarkTiles from "./LandmarkTiles";
 import InfoBar from "./InfoBar";
 import ManeuverPanel from "./ManeuverPanel";
-import BonusPanel from "./BonusPanel";
 import LandmarkPanel from "./LandmarkPanel";
 import AlliancePanel from "./AlliancePanel";
 import AllianceEffectPanel from "./AllianceEffectPanel";
+import PickDiscardPanel from "./PickDiscardPanel";
+import RemoveFortressPanel from "./RemoveFortressPanel";
+import PlaceUnitPanel from "./PlaceUnitPanel";
 import { getCardDef, getLandmarkDef } from "@/lib/lotrCards";
 
 interface Props {
@@ -25,9 +27,13 @@ interface Props {
   isManeuverPhase: boolean;
   pendingManeuvers: LotrManeuverType[];
   onResolveManeuver: (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => void;
-  isBonusPhase: boolean;
-  bonusPosition: number;
-  onResolveBonus: (bonusPosition: number, targetRegion?: string, action?: string) => void;
+  isPickDiscardPhase: boolean;
+  isRemoveFortressPhase: boolean;
+  isPlaceUnitPhase: boolean;
+  resolvePickDiscard: (action: string, cardDefId?: string) => void;
+  resolveRemoveFortress: (action: string, targetRegion?: string) => void;
+  resolvePlaceUnit: (action: string, targetRegion?: string) => void;
+  discardPile: string[];
   isLandmarkPhase: boolean;
   landmarkSubPhase: string | null;
   onResolveLandmark: (action: string, data?: Record<string, string>) => void;
@@ -40,7 +46,7 @@ interface Props {
   onResolveAllianceEffect: (data: Record<string, unknown>) => void;
 }
 
-export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, players, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isBonusPhase, bonusPosition, onResolveBonus, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance, isAllianceEffectPhase, onResolveAllianceEffect }: Props) {
+export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, players, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isPickDiscardPhase, isRemoveFortressPhase, isPlaceUnitPhase, resolvePickDiscard, resolveRemoveFortress, resolvePlaceUnit, discardPile, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance, isAllianceEffectPhase, onResolveAllianceEffect }: Props) {
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
   const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
 
@@ -64,7 +70,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
 
   const fortressCount = (state.regions || []).filter(r => r.fortress === mySide).length;
   const isFinished = gameStatus === "FINISHED";
-  const inInteractivePhase = isManeuverPhase || isBonusPhase || isLandmarkPhase || isAlliancePhase || isAllianceEffectPhase;
+  const inInteractivePhase = isManeuverPhase || isPickDiscardPhase || isRemoveFortressPhase || isPlaceUnitPhase || isLandmarkPhase || isAlliancePhase || isAllianceEffectPhase;
   const isLandmarkMovement = isLandmarkPhase && landmarkSubPhase === "MOVEMENT";
 
   let winnerSide: LotrPlayerSide | undefined;
@@ -116,11 +122,27 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
         </div>
       )}
 
-      {!isFinished && isBonusPhase && (
+      {!isFinished && isPickDiscardPhase && (
         <div className="px-3 pt-3">
-          <BonusPanel
-            bonusPosition={bonusPosition}
-            onSkip={() => onResolveBonus(bonusPosition, undefined, "SKIP")}
+          <PickDiscardPanel
+            discardPile={discardPile}
+            onResolve={resolvePickDiscard}
+          />
+        </div>
+      )}
+
+      {!isFinished && isRemoveFortressPhase && (
+        <div className="px-3 pt-3">
+          <RemoveFortressPanel
+            onSkip={() => resolveRemoveFortress("SKIP")}
+          />
+        </div>
+      )}
+
+      {!isFinished && isPlaceUnitPhase && (
+        <div className="px-3 pt-3">
+          <PlaceUnitPanel
+            onSkip={() => resolvePlaceUnit("SKIP")}
           />
         </div>
       )}
@@ -205,9 +227,10 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
                   isManeuverPhase={!isFinished && isManeuverPhase}
                   pendingManeuvers={pendingManeuvers}
                   onResolveManeuver={onResolveManeuver}
-                  isBonusPhase={!isFinished && isBonusPhase}
-                  bonusPosition={bonusPosition}
-                  onResolveBonus={onResolveBonus}
+                  isRemoveFortressPhase={!isFinished && isRemoveFortressPhase}
+                  isPlaceUnitPhase={!isFinished && isPlaceUnitPhase}
+                  onResolveRemoveFortress={resolveRemoveFortress}
+                  onResolvePlaceUnit={resolvePlaceUnit}
                   isLandmarkMovement={!isFinished && isLandmarkMovement}
                   onResolveLandmark={onResolveLandmark}
                 />

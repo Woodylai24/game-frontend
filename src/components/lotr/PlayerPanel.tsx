@@ -175,8 +175,13 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
               </div>
             ))}
             {player.allianceTokenIds.includes("AT-ELVES-3") && (
-              <div className="flex items-center gap-0.5 bg-gradient-to-br from-purple-700 to-yellow-600 rounded px-1 py-0.5 border border-yellow-400" title="Wild (Elves 3): once per turn, counts as any skill">
-                <span className="text-[10px] font-bold text-yellow-200">W</span>
+              <div className="flex items-center gap-0.5 bg-gray-700/50 rounded px-1 py-0.5" title="Wild (Elves 3): once per turn, counts as any skill">
+                {(["RUSE", "STRENGTH", "COURAGE", "KNOWLEDGE", "LEADERSHIP"] as LotrSkill[]).map((skill, si) => (
+                  <span key={skill} className="flex items-center">
+                    {si > 0 && <span className="text-[10px] text-gray-400 mx-0.5">/</span>}
+                    <img src={getSkillIconPath(skill)} alt={skill} className="w-5 h-5 rounded" title={skill} />
+                  </span>
+                ))}
               </div>
             )}
           </div>
