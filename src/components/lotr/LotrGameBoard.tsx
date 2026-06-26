@@ -121,94 +121,94 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
           players={players}
           mySide={mySide}
         />
+
+        {!isFinished && isManeuverPhase && (
+          <div className="px-3 pt-3">
+            <ManeuverPanel
+              pendingManeuvers={pendingManeuvers}
+              onSkip={() => onResolveManeuver("SKIP")}
+            />
+          </div>
+        )}
+
+        {!isFinished && isPickDiscardPhase && (
+          <div className="px-3 pt-3">
+            <PickDiscardPanel
+              discardPile={discardPile}
+              onResolve={resolvePickDiscard}
+            />
+          </div>
+        )}
+
+        {!isFinished && isRemoveFortressPhase && (
+          <div className="px-3 pt-3">
+            <RemoveFortressPanel
+              onSkip={() => resolveRemoveFortress("SKIP")}
+            />
+          </div>
+        )}
+
+        {!isFinished && isPlaceUnitPhase && (
+          <div className="px-3 pt-3">
+            <PlaceUnitPanel
+              onSkip={() => resolvePlaceUnit("SKIP")}
+            />
+          </div>
+        )}
+
+        {!isFinished && isLandmarkPhase && !isLandmarkMovement && (
+          <div className="px-3 pt-3">
+            <LandmarkPanel
+              subPhase={landmarkSubPhase ?? ""}
+              movementsRemaining={state.landmarkMovementsRemaining}
+              discardPile={state.discardPile}
+              cardDefs={cardDefsMap}
+              drawnTokens={state.landmarkDrawnTokens}
+              opponentGreyCards={opponentGreyCards}
+              opponentCardDefs={opponentCardDefs}
+              onResolveLandmark={onResolveLandmark}
+            />
+          </div>
+        )}
+
+        {!isFinished && isLandmarkMovement && (
+          <div className="px-3 pt-3">
+            <LandmarkPanel
+              subPhase="MOVEMENT"
+              movementsRemaining={state.landmarkMovementsRemaining}
+              onResolveLandmark={onResolveLandmark}
+            />
+          </div>
+        )}
+
+        {!isFinished && state.alliancePhase && (
+          <div className="px-3 pt-3">
+            <AlliancePanel
+              triggerType={state.allianceTriggerType ?? ""}
+              race={state.allianceRace}
+              drawnTokens={state.allianceDrawnTokens ?? []}
+              onSelectToken={onResolveAlliance}
+              readOnly={!isAlliancePhase}
+            />
+          </div>
+        )}
+
+        {!isFinished && state.allianceEffectPhase && (
+          <div className="px-3 pt-3">
+            <AllianceEffectPanel
+              effectType={state.allianceEffectType ?? ""}
+              effectSubPhase={state.allianceEffectSubPhase ?? ""}
+              counter={state.allianceEffectCounter ?? 0}
+              selectedRegions={state.allianceEffectSelectedRegions ?? []}
+              discardPile={state.discardPile ?? []}
+              mySide={mySide}
+              regions={state.regions}
+              onResolve={onResolveAllianceEffect}
+              readOnly={!isAllianceEffectPhase}
+            />
+          </div>
+        )}
       </div>
-
-      {!isFinished && isManeuverPhase && (
-        <div className="px-3 pt-3">
-          <ManeuverPanel
-            pendingManeuvers={pendingManeuvers}
-            onSkip={() => onResolveManeuver("SKIP")}
-          />
-        </div>
-      )}
-
-      {!isFinished && isPickDiscardPhase && (
-        <div className="px-3 pt-3">
-          <PickDiscardPanel
-            discardPile={discardPile}
-            onResolve={resolvePickDiscard}
-          />
-        </div>
-      )}
-
-      {!isFinished && isRemoveFortressPhase && (
-        <div className="px-3 pt-3">
-          <RemoveFortressPanel
-            onSkip={() => resolveRemoveFortress("SKIP")}
-          />
-        </div>
-      )}
-
-      {!isFinished && isPlaceUnitPhase && (
-        <div className="px-3 pt-3">
-          <PlaceUnitPanel
-            onSkip={() => resolvePlaceUnit("SKIP")}
-          />
-        </div>
-      )}
-
-      {!isFinished && isLandmarkPhase && !isLandmarkMovement && (
-        <div className="px-3 pt-3">
-          <LandmarkPanel
-            subPhase={landmarkSubPhase ?? ""}
-            movementsRemaining={state.landmarkMovementsRemaining}
-            discardPile={state.discardPile}
-            cardDefs={cardDefsMap}
-            drawnTokens={state.landmarkDrawnTokens}
-            opponentGreyCards={opponentGreyCards}
-            opponentCardDefs={opponentCardDefs}
-            onResolveLandmark={onResolveLandmark}
-          />
-        </div>
-      )}
-
-      {!isFinished && isLandmarkMovement && (
-        <div className="px-3 pt-3">
-          <LandmarkPanel
-            subPhase="MOVEMENT"
-            movementsRemaining={state.landmarkMovementsRemaining}
-            onResolveLandmark={onResolveLandmark}
-          />
-        </div>
-      )}
-
-      {!isFinished && state.alliancePhase && (
-        <div className="px-3 pt-3">
-          <AlliancePanel
-            triggerType={state.allianceTriggerType ?? ""}
-            race={state.allianceRace}
-            drawnTokens={state.allianceDrawnTokens ?? []}
-            onSelectToken={onResolveAlliance}
-            readOnly={!isAlliancePhase}
-          />
-        </div>
-      )}
-
-      {!isFinished && state.allianceEffectPhase && (
-        <div className="px-3 pt-3">
-          <AllianceEffectPanel
-            effectType={state.allianceEffectType ?? ""}
-            effectSubPhase={state.allianceEffectSubPhase ?? ""}
-            counter={state.allianceEffectCounter ?? 0}
-            selectedRegions={state.allianceEffectSelectedRegions ?? []}
-            discardPile={state.discardPile ?? []}
-            mySide={mySide}
-            regions={state.regions}
-            onResolve={onResolveAllianceEffect}
-            readOnly={!isAllianceEffectPhase}
-          />
-        </div>
-      )}
 
       <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 overflow-auto">
         <div className="lg:w-48 flex-shrink-0 space-y-3">
@@ -229,7 +229,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
             />
           </div>
           <div className="flex-1 flex flex-col gap-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="order-2 lg:order-1 grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="bg-gray-800 rounded-lg p-3">
                 <RegionMap
                   regions={state.regions}
@@ -248,15 +248,17 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
               <QuestTrack questTrack={state.questTrack} bonusPosition={state.bonusPosition} />
             </div>
 
-            <LandmarkTiles
-              landmarks={state.landmarkTiles}
-              isMyTurn={!inInteractivePhase && isMyTurn}
-              myCoins={me?.coins ?? 0}
-              myPlayedCards={myPlayedCards}
-              fortressCount={fortressCount}
-              onTakeLandmark={onTakeLandmark}
-              myAllianceTokenIds={me?.allianceTokenIds}
-            />
+            <div className="order-1 lg:order-2">
+              <LandmarkTiles
+                landmarks={state.landmarkTiles}
+                isMyTurn={!inInteractivePhase && isMyTurn}
+                myCoins={me?.coins ?? 0}
+                myPlayedCards={myPlayedCards}
+                fortressCount={fortressCount}
+                onTakeLandmark={onTakeLandmark}
+                myAllianceTokenIds={me?.allianceTokenIds}
+              />
+            </div>
           </div>
         </div>
       </div>
