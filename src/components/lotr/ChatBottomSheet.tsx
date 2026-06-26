@@ -8,9 +8,10 @@ interface Props {
   username: string;
   onSend: (message: string) => void;
   onClose: () => void;
+  players?: { username: string; side: string }[];
 }
 
-export default function ChatBottomSheet({ messages, username, onSend, onClose }: Props) {
+export default function ChatBottomSheet({ messages, username, onSend, onClose, players }: Props) {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +27,14 @@ export default function ChatBottomSheet({ messages, username, onSend, onClose }:
     setInput("");
   };
 
+  const sideColor = (msgUsername: string) => {
+    if (msgUsername === username) return "text-sky-400";
+    const player = players?.find((p) => p.username === msgUsername);
+    if (player?.side === "FELLOWSHIP") return "text-sky-400";
+    if (player?.side === "SAURON") return "text-red-400";
+    return "text-gray-400";
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
@@ -37,11 +46,6 @@ export default function ChatBottomSheet({ messages, username, onSend, onClose }:
         style={{ maxHeight: "70vh" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag handle */}
-        <div className="flex justify-center pt-2 pb-1">
-          <div className="w-10 h-1 rounded-full bg-gray-600" />
-        </div>
-
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700">
           <span className="text-sm font-medium text-gray-200">Chat</span>
@@ -61,14 +65,17 @@ export default function ChatBottomSheet({ messages, username, onSend, onClose }:
           {messages.length === 0 ? (
             <p className="text-gray-500 text-sm text-center py-8">No messages yet</p>
           ) : (
-            messages.map((msg, i) => (
-              <div key={i} className="text-sm">
-                <span className={`font-medium ${msg.username === username ? "text-sky-400" : "text-gray-400"}`}>
-                  {msg.username}:
-                </span>
-                <span className="text-gray-200 ml-2">{msg.message}</span>
-              </div>
-            ))
+            messages.map((msg, i) => {
+              const isMe = msg.username === username;
+              return (
+                <div key={i} className="text-sm">
+                  <span className={`font-medium ${sideColor(msg.username)}`}>
+                    {isMe ? "You" : msg.username}:
+                  </span>
+                  <span className="text-gray-200 ml-2">{msg.message}</span>
+                </div>
+              );
+            })
           )}
         </div>
 

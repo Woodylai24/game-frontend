@@ -234,6 +234,7 @@ export default function GamePage() {
             username={username}
             onSend={chat.sendMessage}
             onClose={() => setShowChat(false)}
+            players={lotr.players}
           />
         )}
       </div>
