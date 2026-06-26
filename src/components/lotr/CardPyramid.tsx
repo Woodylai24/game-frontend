@@ -80,7 +80,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                         />
                       ) : null}
                     </AnimatePresence>
-                    {!slot.faceUp && slot.cardDefId ? (
+                    {!slot.faceUp ? (
                       <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-contain" />
                     ) : null}
                   </button>
@@ -126,7 +126,7 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                       />
                     ) : null}
                   </AnimatePresence>
-                  {!slot.faceUp && slot.cardDefId ? (
+                  {!slot.faceUp ? (
                     <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-contain" />
                   ) : null}
                 </button>
