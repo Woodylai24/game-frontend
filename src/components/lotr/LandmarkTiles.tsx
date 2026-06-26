@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { LotrLandmarkTileDef, LotrSkill, getLandmarkImagePath, getLandmarkBackPath, getSkillIconPath } from "@/types/lotr";
 import { resolveSkillsWithOptions } from "@/lib/lotrCards";
 
@@ -36,15 +37,23 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCa
     <div className="bg-gray-800 rounded-lg p-3">
       <div className="text-xs font-bold text-white mb-2">LANDMARKS</div>
       <div className="flex gap-2 flex-wrap items-center">
-        {faceUpTiles.map(tile => (
-          <button key={tile.id} onClick={() => isMyTurn && setSelectedTile(tile)}
-            disabled={!isMyTurn}
-            className="relative">
-            <img src={getLandmarkImagePath(tile.id)} alt={tile.name}
-              className={`w-32 h-32 sm:w-40 sm:h-40 rounded border-2 object-contain
-                ${isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer" : "border-gray-600"}`} />
-          </button>
-        ))}
+        <AnimatePresence>
+          {faceUpTiles.map(tile => (
+            <motion.button
+              key={tile.id}
+              layout
+              exit={{ opacity: 0, scale: 0.7 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              onClick={() => isMyTurn && setSelectedTile(tile)}
+              disabled={!isMyTurn}
+              className="relative"
+            >
+              <img src={getLandmarkImagePath(tile.id)} alt={tile.name}
+                className={`w-32 h-32 sm:w-40 sm:h-40 rounded border-2 object-contain
+                  ${isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer" : "border-gray-600"}`} />
+            </motion.button>
+          ))}
+        </AnimatePresence>
         {faceDownCount > 0 && (
           <div className="relative">
             <img src={getLandmarkBackPath()} alt="face-down landmarks"

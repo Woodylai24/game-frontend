@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { LotrQuestTrack, getBonusIconPath } from "@/types/lotr";
 
@@ -32,8 +33,22 @@ export default function QuestTrack({ questTrack, bonusPosition }: Props) {
             } rounded p-1`}>
               <div className="text-[10px] text-gray-500">{pos}</div>
               <div className="w-5 h-5 flex items-center justify-center">
-                {isFellowship && <div className="w-3 h-3 rounded-full bg-blue-400 border border-blue-300" title="Fellowship" />}
-                {isSauron && <div className="w-3 h-3 rounded-full bg-red-400 border border-red-300" title="Sauron" />}
+                {isFellowship && (
+                  <motion.div
+                    layoutId="fellowship-marker"
+                    className="w-3 h-3 rounded-full bg-blue-400 border border-blue-300"
+                    title="Fellowship"
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  />
+                )}
+                {isSauron && (
+                  <motion.div
+                    layoutId="sauron-marker"
+                    className="w-3 h-3 rounded-full bg-red-400 border border-red-300"
+                    title="Sauron"
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  />
+                )}
               </div>
               {isBonus && (
                 <Image src={getBonusIconPath(pos)} alt={`Bonus ${pos}`} width={16} height={16} className="mt-0.5" />

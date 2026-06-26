@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { LotrCardSlot, LotrCardDef, LotrSkill, LotrRegion, getCardImagePath, getCardBackPath, getSkillIconPath } from "@/types/lotr";
 import { getCardDef, getCardEffectText, resolveSkillsWithOptions } from "@/lib/lotrCards";
 
@@ -67,9 +68,19 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                         "border-gray-500 opacity-60"}
                     `}
                   >
-                    {slot.cardDefId && slot.faceUp && card ? (
-                      <img src={getCardImagePath(card.id, card.chapter)} alt={card.name} className="w-full h-full object-contain" />
-                    ) : !slot.faceUp ? (
+                    <AnimatePresence>
+                      {slot.cardDefId && slot.faceUp && card ? (
+                        <motion.img
+                          key={slot.cardDefId}
+                          src={getCardImagePath(card.id, card.chapter)}
+                          alt={card.name}
+                          className="w-full h-full object-contain absolute inset-0"
+                          exit={{ opacity: 0, scale: 0.7, y: -10 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        />
+                      ) : null}
+                    </AnimatePresence>
+                    {!slot.faceUp && slot.cardDefId ? (
                       <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-contain" />
                     ) : null}
                   </button>
@@ -103,9 +114,19 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                       "border-gray-500 opacity-60"}
                   `}
                 >
-                  {slot.cardDefId && slot.faceUp && card ? (
-                    <img src={getCardImagePath(card.id, card.chapter)} alt={card.name} className="w-full h-full object-contain" />
-                  ) : !slot.faceUp ? (
+                  <AnimatePresence>
+                    {slot.cardDefId && slot.faceUp && card ? (
+                      <motion.img
+                        key={slot.cardDefId}
+                        src={getCardImagePath(card.id, card.chapter)}
+                        alt={card.name}
+                        className="w-full h-full object-contain absolute inset-0"
+                        exit={{ opacity: 0, scale: 0.7, y: -10 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                      />
+                    ) : null}
+                  </AnimatePresence>
+                  {!slot.faceUp && slot.cardDefId ? (
                     <img src={getCardBackPath(currentChapter)} alt="face down" className="w-full h-full object-contain" />
                   ) : null}
                 </button>
