@@ -193,6 +193,15 @@ export default function GameLogBar({ gameLog, players, mySide }: Props) {
           </>
         );
       }
+      case "STEAL_COIN": {
+        const stolen = data.coinsStolen ?? 0;
+        return (
+          <>
+            <span className={`${sideColor(entry.side)} font-semibold`}>{name}</span>
+            <span className="text-gray-300"> stole {stolen === 1 ? "1 coin" : `${stolen} coins`} from the opponent</span>
+          </>
+        );
+      }
       case "MANEUVER": {
         switch (data.maneuverType) {
           case "MOVE_UNIT":
@@ -202,11 +211,11 @@ export default function GameLogBar({ gameLog, players, mySide }: Props) {
                 <span className="text-gray-300"> moved 1 unit from {data.fromRegion ?? "?"} to {data.toRegion ?? "?"}</span>
               </>
             );
-          case "MOVE_FORTRESS":
+          case "REMOVE_ENEMY_UNIT":
             return (
               <>
                 <span className={`${sideColor(entry.side)} font-semibold`}>{name}</span>
-                <span className="text-gray-300"> moved fortress from {data.fromRegion ?? "?"} to {data.toRegion ?? "?"}</span>
+                <span className="text-gray-300"> removed enemy unit from {data.targetRegion ?? "?"}</span>
               </>
             );
           case "SKIP":
@@ -230,7 +239,12 @@ export default function GameLogBar({ gameLog, players, mySide }: Props) {
         return (
           <>
             <span className={`${sideColor(entry.side)} font-semibold`}>{name}</span>
-            <span className="text-gray-300"> revealed {tokenSpan(drawn[0], false)} / {tokenSpan(drawn[1], false)}, kept {tokenSpan(data.chosenTokenId)}</span>
+            <span className="text-gray-300"> revealed {drawn.map((id, i) => (
+              <span key={i}>
+                {i > 0 && " / "}
+                {tokenSpan(id, false)}
+              </span>
+            ))}, kept {tokenSpan(data.chosenTokenId)}</span>
           </>
         );
       }
