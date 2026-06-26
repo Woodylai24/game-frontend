@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
+import { loadChatMessages, saveChatMessage } from "@/lib/chatStorage";
 
 export default function RoomPage() {
   const params = useParams();
@@ -109,6 +110,7 @@ export default function RoomPage() {
           roomId,
           (message) => {
             setChatMessages((prev) => [...prev, message]);
+            saveChatMessage(roomId, message);
           },
         );
         unsubscribes.push(unsubscribeChat);
@@ -148,6 +150,8 @@ export default function RoomPage() {
                 setHasJoined(true);
                 // Use room from join response, or the pending data from @SubscribeMapping
                 setRoom(res.room || pendingRoomData || roomData);
+                // Load persisted chat messages
+                setChatMessages(loadChatMessages(roomId));
                 setUnsubscribeFunctions(unsubscribes);
               } else {
                 // Join failed (e.g., wrong password) — clean up subscriptions

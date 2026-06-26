@@ -8,7 +8,10 @@ import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
 import TicTacToeBoard from "@/components/TicTacToeBoard";
 import { useLotrGame } from "@/hooks/useLotrGame";
+import { useChat } from "@/hooks/useChat";
 import LotrGameBoard from "@/components/lotr/LotrGameBoard";
+import PlayerAidModal from "@/components/lotr/PlayerAidModal";
+import ChatBottomSheet from "@/components/lotr/ChatBottomSheet";
 
 export default function GamePage() {
   const params = useParams();
@@ -24,6 +27,10 @@ export default function GamePage() {
   const username = user?.username || "";
 
   const lotr = useLotrGame(sessionId, sessionData?.roomId ?? 0, username);
+
+  const chat = useChat(sessionData?.roomId ?? 0, username);
+  const [showPlayerAid, setShowPlayerAid] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   // If LOTR state loaded successfully, it's a LOTR game
   useEffect(() => {
@@ -199,6 +206,36 @@ export default function GamePage() {
           onResolveAllianceEffect={lotr.resolveAllianceEffect}
           onBackToRoom={handleBackToRoom}
         />
+
+        {/* Sticky action buttons */}
+        <div className="fixed bottom-4 right-4 z-30 flex gap-2">
+          <button
+            onClick={() => setShowPlayerAid(true)}
+            className="bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-lg text-xs font-medium shadow-lg border border-gray-700"
+          >
+            Player Aid
+          </button>
+          <button
+            onClick={() => setShowChat(true)}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-medium shadow-lg"
+          >
+            Chat
+          </button>
+        </div>
+
+        {/* Mobile spacer so content can scroll past sticky buttons */}
+        <div className="h-16 lg:hidden" />
+
+        {/* Modals */}
+        {showPlayerAid && <PlayerAidModal onClose={() => setShowPlayerAid(false)} />}
+        {showChat && (
+          <ChatBottomSheet
+            messages={chat.messages}
+            username={username}
+            onSend={chat.sendMessage}
+            onClose={() => setShowChat(false)}
+          />
+        )}
       </div>
     );
   }
