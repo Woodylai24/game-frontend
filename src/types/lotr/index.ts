@@ -116,7 +116,7 @@ export interface LotrGameState {
 }
 
 export interface LotrLogEntry {
-  side: LotrPlayerSide;
+  side: LotrPlayerSide | null;
   action: string;
   data: Record<string, any>;
 }
