@@ -168,12 +168,24 @@ export default function GameLogBar({ gameLog, players, mySide }: Props) {
 
     switch (entry.action) {
       case "TAKE_CARD_PLAY": {
+        const def = data.cardDefId ? getCardDef(data.cardDefId) : undefined;
+        const effectParts: string[] = [];
+        if (def?.color === "RED" && data.region) {
+          const u = data.unitsPlaced ?? 1;
+          effectParts.push(`Placed ${u} ${u === 1 ? "unit" : "units"} in ${data.region}`);
+        } else if (def?.color === "YELLOW" && data.coinsGained != null) {
+          effectParts.push(`Gained ${data.coinsGained} ${data.coinsGained === 1 ? "coin" : "coins"}`);
+        } else if (def?.color === "BLUE" && data.ringsAdvanced != null) {
+          effectParts.push(`Advanced ${data.ringsAdvanced} ${data.ringsAdvanced === 1 ? "ring" : "rings"}`);
+        } else if (def?.color === "GREEN" && data.raceGained) {
+          effectParts.push(`Gained ${data.raceGained.toLowerCase()} symbol`);
+        }
         return (
           <>
             <span className={`${sideColor(entry.side)} font-semibold`}>{name}</span>
             <span className="text-gray-300"> played {cardSpan(data.cardDefId)} — paid {coins(data.coinsPaid ?? 0)}</span>
             {data.chained ? <span className="text-gray-500"> (chained)</span> : null}
-            {data.region ? <span className="text-gray-400">. Placed units in {data.region}</span> : null}
+            {effectParts.length > 0 ? <span className="text-gray-400">. {effectParts.join(". ")}</span> : null}
           </>
         );
       }
