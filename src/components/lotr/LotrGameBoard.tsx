@@ -229,7 +229,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
             />
           </div>
           <div className="flex-1 flex flex-col gap-3">
-            <div className="order-2 lg:order-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="order-2 lg:order-1 grid grid-cols-1 xl:grid-cols-2 gap-3">
               <div className="bg-gray-800 rounded-lg p-3">
                 <RegionMap
                   regions={state.regions}

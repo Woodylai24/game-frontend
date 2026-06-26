@@ -538,7 +538,7 @@ export default function RoomPage() {
                   ) : (
                     chatMessages.map((msg, index) => (
                       <div key={index} className="text-sm">
-                        <span className={`font-medium ${msg.username === username ? "text-blue-600" : "text-blue-600"}`}>
+                        <span className="font-medium text-blue-600">
                           {msg.username === username ? "You" : `${msg.username}:`}
                         </span>
                         <span className="ml-2">{msg.message}</span>

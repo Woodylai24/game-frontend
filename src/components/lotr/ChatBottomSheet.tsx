@@ -28,7 +28,6 @@ export default function ChatBottomSheet({ messages, username, onSend, onClose, p
   };
 
   const sideColor = (msgUsername: string) => {
-    if (msgUsername === username) return "text-sky-400";
     const player = players?.find((p) => p.username === msgUsername);
     if (player?.side === "FELLOWSHIP") return "text-sky-400";
     if (player?.side === "SAURON") return "text-red-400";
