@@ -11,9 +11,10 @@ interface Props {
   winnerSide?: LotrPlayerSide;
   mySide?: string;
   players?: { username: string; side: string }[];
+  onBackToRoom?: () => void;
 }
 
-export default function InfoBar({ currentChapter, currentTurnPlayer, isMyTurn, isFinished, isDraw, winnerSide, mySide, players }: Props) {
+export default function InfoBar({ currentChapter, currentTurnPlayer, isMyTurn, isFinished, isDraw, winnerSide, mySide, players, onBackToRoom }: Props) {
   const chapterLabel = currentChapter > 3 ? "Game Finished" : `Chapter ${["I", "II", "III"][currentChapter - 1] || "?"}`;
   const playerName = (side: LotrPlayerSide) =>
     players?.find(p => p.side === side)?.username ?? (side === "FELLOWSHIP" ? "Fellowship" : "Sauron");
@@ -38,9 +39,18 @@ export default function InfoBar({ currentChapter, currentTurnPlayer, isMyTurn, i
           <div className="text-sm text-gray-400">Waiting for {playerName(currentTurnPlayer)}...</div>
         )}
       </div>
-      <div className="text-xs text-gray-500">
-        Turn: {playerName(currentTurnPlayer)}
-      </div>
+      {isFinished && onBackToRoom ? (
+        <button
+          onClick={onBackToRoom}
+          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-xs font-bold"
+        >
+          Back to Room
+        </button>
+      ) : (
+        <div className="text-xs text-gray-500">
+          Turn: {playerName(currentTurnPlayer)}
+        </div>
+      )}
     </div>
   );
 }

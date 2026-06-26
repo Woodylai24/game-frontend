@@ -45,9 +45,10 @@ interface Props {
   onResolveAlliance: (tokenId: string) => void;
   isAllianceEffectPhase: boolean;
   onResolveAllianceEffect: (data: Record<string, unknown>) => void;
+  onBackToRoom?: () => void;
 }
 
-export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, players, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isPickDiscardPhase, isRemoveFortressPhase, isPlaceUnitPhase, resolvePickDiscard, resolveRemoveFortress, resolvePlaceUnit, discardPile, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance, isAllianceEffectPhase, onResolveAllianceEffect }: Props) {
+export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, players, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isPickDiscardPhase, isRemoveFortressPhase, isPlaceUnitPhase, resolvePickDiscard, resolveRemoveFortress, resolvePlaceUnit, discardPile, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance, isAllianceEffectPhase, onResolveAllianceEffect, onBackToRoom }: Props) {
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
   const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
 
@@ -113,6 +114,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
           winnerSide={winnerSide}
           mySide={mySide}
           players={players}
+          onBackToRoom={onBackToRoom}
         />
         <GameLogBar
           gameLog={state.gameLog ?? []}

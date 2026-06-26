@@ -272,6 +272,24 @@ export default function GameLogBar({ gameLog, players, mySide }: Props) {
           </>
         );
       }
+      case "QUEST_BONUS_COIN": {
+        const pos = data.bonusPosition ?? 0;
+        return (
+          <>
+            <span className={`${sideColor(entry.side)} font-semibold`}>{name}</span>
+            <span className="text-gray-300"> gained 1 coin at quest track space {pos}</span>
+          </>
+        );
+      }
+      case "QUEST_BONUS_TURN": {
+        const pos = data.bonusPosition ?? 0;
+        return (
+          <>
+            <span className={`${sideColor(entry.side)} font-semibold`}>{name}</span>
+            <span className="text-gray-300"> takes the next turn for reaching quest track space {pos}</span>
+          </>
+        );
+      }
       case "REMOVE_FORTRESS": {
         return (
           <>
