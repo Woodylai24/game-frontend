@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
+import { loadChatMessages, saveChatMessage } from "@/lib/chatStorage";
 
 export default function RoomPage() {
   const params = useParams();
@@ -29,7 +30,9 @@ export default function RoomPage() {
   >([]);
   const [intentionalLeave, setIntentionalLeave] = useState(false);
   const [hasJoined, setHasJoined] = useState(false);
-  const joinInProgressRef = useRef(false);
+  // Ref guard: prevents double join during React Strict Mode's synchronous
+  // mount→unmount→remount cycle (setHasJoined is async, arrives too late)
+  const joinInitiatedRef = useRef(false);
 
   const username = user?.username || "";
 
@@ -45,11 +48,6 @@ export default function RoomPage() {
         setError("Not authenticated");
         return;
       }
-
-      if (joinInProgressRef.current) {
-        return;
-      }
-      joinInProgressRef.current = true;
 
       try {
         if (!webSocketService.isConnected()) {
@@ -112,6 +110,7 @@ export default function RoomPage() {
           roomId,
           (message) => {
             setChatMessages((prev) => [...prev, message]);
+            saveChatMessage(roomId, message);
           },
         );
         unsubscribes.push(unsubscribeChat);
@@ -151,10 +150,11 @@ export default function RoomPage() {
                 setHasJoined(true);
                 // Use room from join response, or the pending data from @SubscribeMapping
                 setRoom(res.room || pendingRoomData || roomData);
+                // Load persisted chat messages
+                setChatMessages(loadChatMessages(roomId));
                 setUnsubscribeFunctions(unsubscribes);
               } else {
                 // Join failed (e.g., wrong password) — clean up subscriptions
-                joinInProgressRef.current = false;
                 unsubscribes.forEach((fn) => fn());
                 setError(res.error || res.message || "Failed to join room");
               }
@@ -171,7 +171,6 @@ export default function RoomPage() {
         );
       } catch (error) {
         console.error("Failed to connect and join room:", error);
-        joinInProgressRef.current = false;
         setError("Failed to connect to room");
       }
     },
@@ -207,7 +206,8 @@ export default function RoomPage() {
   );
 
   useEffect(() => {
-    if (username && !intentionalLeave && !hasJoined) {
+    if (username && !intentionalLeave && !hasJoined && !joinInitiatedRef.current) {
+      joinInitiatedRef.current = true;
       connectAndJoinRoom();
     }
 
@@ -242,7 +242,7 @@ export default function RoomPage() {
     if (room) {
       setIntentionalLeave(true);
       setHasJoined(false);
-      joinInProgressRef.current = false;
+      joinInitiatedRef.current = false;
       webSocketService.leaveRoom(room.id, username);
     }
     router.push("/");
@@ -539,7 +539,7 @@ export default function RoomPage() {
                     chatMessages.map((msg, index) => (
                       <div key={index} className="text-sm">
                         <span className="font-medium text-blue-600">
-                          {msg.username}:
+                          {msg.username === username ? "You:" : `${msg.username}:`}
                         </span>
                         <span className="ml-2">{msg.message}</span>
                       </div>

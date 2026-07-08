@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  GameSessionData,
-  GameWsEvent,
-} from "@/types/game";
+import { GameSessionData, GameWsEvent } from "@/types/game";
 import { useAuth } from "@/context/AuthContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
 import TicTacToeBoard from "@/components/TicTacToeBoard";
+import { useLotrGame } from "@/hooks/useLotrGame";
+import { useChat } from "@/hooks/useChat";
+import LotrGameBoard from "@/components/lotr/LotrGameBoard";
+import PlayerAidModal from "@/components/lotr/PlayerAidModal";
+import ChatBottomSheet from "@/components/lotr/ChatBottomSheet";
 
 export default function GamePage() {
   const params = useParams();
@@ -19,8 +21,23 @@ export default function GamePage() {
 
   const [sessionData, setSessionData] = useState<GameSessionData | null>(null);
   const [error, setError] = useState("");
+  const [gameType, setGameType] = useState<string>("");
 
+  // Also check if LOTR state loads successfully as fallback
   const username = user?.username || "";
+
+  const lotr = useLotrGame(sessionId, sessionData?.roomId ?? 0, username);
+
+  const chat = useChat(sessionData?.roomId ?? 0, username);
+  const [showPlayerAid, setShowPlayerAid] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+
+  // If LOTR state loaded successfully, it's a LOTR game
+  useEffect(() => {
+    if (lotr.lotrState && !gameType) {
+      setGameType("LOTR");
+    }
+  }, [lotr.lotrState]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -65,7 +82,6 @@ export default function GamePage() {
 
   useEffect(() => {
     if (!username) return;
-
     const init = async () => {
       await fetchSession();
       await connectWs();
@@ -75,49 +91,33 @@ export default function GamePage() {
 
   useEffect(() => {
     if (!sessionData) return;
-
-    const unsubscribes: (() => void)[] = [];
-
-    const unsubscribeGameEvents = webSocketService.subscribeToGameEvents(
+    const unsub = webSocketService.subscribeToGameEvents(
       sessionData.roomId,
-      (event: GameWsEvent) => {
-        handleGameEvent(event);
-      },
+      (event: GameWsEvent) => { handleGameEvent(event); },
     );
-    unsubscribes.push(unsubscribeGameEvents);
-
-    return () => {
-      unsubscribes.forEach((fn) => fn());
-    };
+    return unsub;
   }, [sessionData?.roomId]);
+
+  useEffect(() => {
+    if (sessionData?.roomCode) {
+      apiFetch(`/api/rooms/code/${sessionData.roomCode}`)
+        .then(r => r.json())
+        .then(room => setGameType(room.gameType || ""))
+        .catch(() => {});
+    }
+  }, [sessionData?.roomCode]);
 
   const handleGameEvent = useCallback(
     (event: GameWsEvent) => {
       switch (event.event) {
         case "move":
           setSessionData((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  board: event.board,
-                  currentPlayerOrder: event.currentPlayerOrder,
-                  currentTurn: event.currentTurn,
-                  gameStatus: event.gameStatus as GameSessionData["gameStatus"],
-                }
-              : prev,
+            prev ? { ...prev, board: event.board, currentPlayerOrder: event.currentPlayerOrder, currentTurn: event.currentTurn, gameStatus: event.gameStatus as GameSessionData["gameStatus"] } : prev,
           );
           break;
         case "game_ended":
           setSessionData((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  board: event.board,
-                  gameStatus: event.gameStatus as GameSessionData["gameStatus"],
-                  winnerUsername: event.winnerUsername,
-                  players: event.gameSession.players,
-                }
-              : prev,
+            prev ? { ...prev, gameStatus: event.gameStatus as GameSessionData["gameStatus"], winnerUsername: event.winnerUsername, ...(event.gameSession ? { players: event.gameSession.players } : {}) } : prev,
           );
           break;
         case "return_to_lobby":
@@ -134,9 +134,7 @@ export default function GamePage() {
   };
 
   const handleBackToRoom = () => {
-    if (sessionData) {
-      router.push(`/room/${sessionData.roomCode}`);
-    }
+    if (sessionData) router.push(`/room/${sessionData.roomCode}`);
   };
 
   if (loading || !isAuthenticated || !user) {
@@ -153,12 +151,7 @@ export default function GamePage() {
         <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
           <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => router.push("/")}
-            className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
-          >
-            Back to Home
-          </button>
+          <button onClick={() => router.push("/")} className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600">Back to Home</button>
         </div>
       </div>
     );
@@ -175,6 +168,79 @@ export default function GamePage() {
     );
   }
 
+  if (gameType === "LOTR" && lotr.lotrState) {
+    return (
+      <div className="min-h-screen bg-gray-950">
+        {lotr.error && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm z-50 shadow-lg">
+            {lotr.error}
+          </div>
+        )}
+        <LotrGameBoard
+          state={lotr.lotrState}
+          isMyTurn={lotr.isMyTurn}
+          mySide={lotr.mySide as "FELLOWSHIP" | "SAURON" | undefined}
+          gameStatus={lotr.gameStatus}
+          players={lotr.players}
+          onTakeCard={lotr.takeCard}
+          onTakeLandmark={lotr.takeLandmark}
+          isManeuverPhase={lotr.isManeuverPhase}
+          pendingManeuvers={lotr.lotrState?.pendingManeuvers ?? []}
+          onResolveManeuver={lotr.resolveManeuver}
+          isPickDiscardPhase={lotr.isPickDiscardPhase}
+          isRemoveFortressPhase={lotr.isRemoveFortressPhase}
+          isPlaceUnitPhase={lotr.isPlaceUnitPhase}
+          resolvePickDiscard={lotr.resolvePickDiscard}
+          resolveRemoveFortress={lotr.resolveRemoveFortress}
+          resolvePlaceUnit={lotr.resolvePlaceUnit}
+          discardPile={lotr.lotrState?.discardPile ?? []}
+          isLandmarkPhase={lotr.isLandmarkPhase}
+          landmarkSubPhase={lotr.lotrState?.landmarkSubPhase ?? null}
+          onResolveLandmark={lotr.resolveLandmark}
+          isAlliancePhase={lotr.isAlliancePhase}
+          allianceDrawnTokens={lotr.lotrState?.allianceDrawnTokens ?? []}
+          allianceTriggerType={lotr.lotrState?.allianceTriggerType ?? null}
+          allianceRace={lotr.lotrState?.allianceRace ?? null}
+          onResolveAlliance={lotr.resolveAlliance}
+          isAllianceEffectPhase={lotr.isAllianceEffectPhase}
+          onResolveAllianceEffect={lotr.resolveAllianceEffect}
+          onBackToRoom={handleBackToRoom}
+        />
+
+        {/* Sticky action buttons */}
+        <div className="fixed bottom-4 right-4 z-30 flex gap-2">
+          <button
+            onClick={() => setShowPlayerAid(true)}
+            className="bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-lg text-xs font-medium shadow-lg border border-gray-700"
+          >
+            Player Aid
+          </button>
+          <button
+            onClick={() => setShowChat(true)}
+            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-medium shadow-lg"
+          >
+            Chat
+          </button>
+        </div>
+
+        {/* Mobile spacer so content can scroll past sticky buttons */}
+        <div className="h-16 lg:hidden" />
+
+        {/* Modals */}
+        {showPlayerAid && <PlayerAidModal onClose={() => setShowPlayerAid(false)} />}
+        {showChat && (
+          <ChatBottomSheet
+            messages={chat.messages}
+            username={username}
+            onSend={chat.sendMessage}
+            onClose={() => setShowChat(false)}
+            players={lotr.players}
+          />
+        )}
+      </div>
+    );
+  }
+
   const isFinished = sessionData.gameStatus === "FINISHED";
   const isDraw = isFinished && sessionData.winnerUsername === null;
 
@@ -184,54 +250,26 @@ export default function GamePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div>
-              <h1 className="text-xl font-semibold">
-                {isFinished ? "Game Over" : "Game in Progress"}
-              </h1>
-              <p className="text-sm text-gray-600">
-                Session #{sessionId}
-              </p>
+              <h1 className="text-xl font-semibold">{isFinished ? "Game Over" : "Game in Progress"}</h1>
+              <p className="text-sm text-gray-600">Session #{sessionId}</p>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
-                Playing as: {username}
-              </span>
-              <button
-                onClick={handleBackToRoom}
-                className="text-sm bg-gray-200 px-3 py-1.5 rounded-md hover:bg-gray-300"
-              >
-                Back to Room
-              </button>
+              <span className="text-sm text-gray-600">Playing as: {username}</span>
+              <button onClick={handleBackToRoom} className="text-sm bg-gray-200 px-3 py-1.5 rounded-md hover:bg-gray-300">Back to Room</button>
             </div>
           </div>
         </div>
       </header>
-
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
           {isFinished && (
             <div className="text-center mb-6">
               <div className="text-2xl font-bold">
-                {isDraw ? (
-                  <span className="text-yellow-600">Game Over — Draw!</span>
-                ) : (
-                  <span className="text-green-600">
-                    Game Over — {sessionData.winnerUsername} wins!
-                  </span>
-                )}
+                {isDraw ? <span className="text-yellow-600">Game Over — Draw!</span> : <span className="text-green-600">Game Over — {sessionData.winnerUsername} wins!</span>}
               </div>
             </div>
           )}
-
-          <TicTacToeBoard
-            board={sessionData.board}
-            currentPlayerOrder={sessionData.currentPlayerOrder}
-            players={sessionData.players}
-            username={username}
-            gameStatus={sessionData.gameStatus}
-            winnerUsername={sessionData.winnerUsername}
-            isDraw={isDraw}
-            onCellClick={handleCellClick}
-          />
+          <TicTacToeBoard board={sessionData.board} currentPlayerOrder={sessionData.currentPlayerOrder} players={sessionData.players} username={username} gameStatus={sessionData.gameStatus} winnerUsername={sessionData.winnerUsername} isDraw={isDraw} onCellClick={handleCellClick} />
         </div>
       </main>
     </div>
