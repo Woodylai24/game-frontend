@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const { login, guestLogin } = useAuth();
   const router = useRouter();
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -113,7 +114,7 @@ export default function LoginPage() {
           <div className="flex-1 border-t border-gray-200"></div>
         </div>
         <a
-          href="http://localhost:8080/oauth2/authorization/google"
+          href={`${API_BASE}/oauth2/authorization/google`}
           className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 font-medium"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">

@@ -2,6 +2,8 @@ import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 import { GameRoom, ChatMessage, GameWsEvent } from "@/types/game";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+
 interface StompFrame {
   headers: Record<string, string>;
   body: string;
@@ -24,7 +26,7 @@ export class WebSocketService {
       }
 
       this.client = new Client({
-        webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+        webSocketFactory: () => new SockJS(`${API_BASE}/ws`),
         connectHeaders: {
           Authorization: `Bearer ${token}`,
         },
