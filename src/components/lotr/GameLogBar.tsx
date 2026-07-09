@@ -272,7 +272,7 @@ export default function GameLogBar({ gameLog, players, mySide }: Props) {
         return (
           <>
             <span className={`${sideColor(entry.side)} font-semibold`}>{name}</span>
-            <span className="text-gray-300"> discarded opponent's {cardSpan(data.cardDefId)}</span>
+            <span className="text-gray-300"> discarded opponent&apos;s {cardSpan(data.cardDefId)}</span>
           </>
         );
       }

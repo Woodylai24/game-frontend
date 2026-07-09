@@ -118,6 +118,7 @@ export interface LotrGameState {
 export interface LotrLogEntry {
   side: LotrPlayerSide | null;
   action: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>;
 }
 
