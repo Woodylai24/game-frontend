@@ -8,6 +8,7 @@ import {
   GameWsEvent,
 } from "@/types/game";
 import { useAuth } from "@/context/AuthContext";
+import { useConnectionStatus } from "@/context/ConnectionContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
 import { loadChatMessages, saveChatMessage } from "@/lib/chatStorage";
@@ -17,6 +18,7 @@ export default function RoomPage() {
   const router = useRouter();
   const roomCode = params.roomCode as string;
   const { user, loading, isAuthenticated, isGuest } = useAuth();
+  const { reconnectCount } = useConnectionStatus();
 
   const [room, setRoom] = useState<GameRoom | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -215,6 +217,33 @@ export default function RoomPage() {
       unsubscribeFunctions.forEach((unsubscribe) => unsubscribe());
     };
   }, [connectAndJoinRoom, intentionalLeave, hasJoined]);
+
+  // Re-sync room state after a WS reconnect (skips the initial connect —
+  // connectAndJoinRoom already fetched). The 5 subscriptions auto-replay via
+  // the websocket.ts registry, so we don't re-join; we just re-pull state to
+  // catch anything broadcast during the outage. If the room was deleted while
+  // we were disconnected, redirect home with a message.
+  const initialReconnectSeen = useRef(false);
+  useEffect(() => {
+    if (reconnectCount === 0) return;
+    if (!initialReconnectSeen.current) {
+      initialReconnectSeen.current = true;
+      return;
+    }
+    if (!hasJoined || intentionalLeave) return;
+
+    apiFetch(`/api/rooms/code/${roomCode}`)
+      .then((response) => {
+        if (response.status === 404) {
+          router.push("/?error=" + encodeURIComponent("The room no longer exists"));
+          return;
+        }
+        if (response.ok) {
+          return response.json().then((data: GameRoom) => setRoom(data));
+        }
+      })
+      .catch(() => {});
+  }, [reconnectCount, roomCode, hasJoined, intentionalLeave, router]);
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !room) return;

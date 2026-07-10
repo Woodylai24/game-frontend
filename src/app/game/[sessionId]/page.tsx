@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { GameSessionData, GameWsEvent } from "@/types/game";
 import { useAuth } from "@/context/AuthContext";
+import { useConnectionStatus } from "@/context/ConnectionContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
 import TicTacToeBoard from "@/components/TicTacToeBoard";
@@ -18,6 +19,7 @@ export default function GamePage() {
   const router = useRouter();
   const sessionId = Number(params.sessionId);
   const { user, loading, isAuthenticated } = useAuth();
+  const { reconnectCount } = useConnectionStatus();
 
   const [sessionData, setSessionData] = useState<GameSessionData | null>(null);
   const [error, setError] = useState("");
@@ -83,11 +85,29 @@ export default function GamePage() {
   useEffect(() => {
     if (!username) return;
     const init = async () => {
-      await fetchSession();
+      // Connect WS BEFORE fetching session. fetchSession() sets sessionData,
+      // which triggers the subscription effects (useLotrGame + the page's own).
+      // If connect runs after, those effects fire while disconnected. The
+      // subscription registry in websocket.ts now queues them regardless, but
+      // connect-first is the correct, intent-revealing order.
       await connectWs();
+      await fetchSession();
     };
     init();
   }, [username, fetchSession, connectWs]);
+
+  // Re-sync session state after a WS reconnect (skips the initial connect —
+  // the mount effect above already fetched). Messages broadcast during the
+  // outage are lost (in-memory broker), so we re-pull to get the latest state.
+  const initialReconnectSeen = useRef(false);
+  useEffect(() => {
+    if (reconnectCount === 0) return;
+    if (!initialReconnectSeen.current) {
+      initialReconnectSeen.current = true;
+      return;
+    }
+    fetchSession();
+  }, [reconnectCount, fetchSession]);
 
   useEffect(() => {
     if (!sessionData) return;
