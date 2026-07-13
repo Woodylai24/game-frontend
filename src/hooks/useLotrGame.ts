@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiFetch } from "@/services/api";
 import { webSocketService } from "@/services/websocket";
+import { useConnectionStatus } from "@/context/ConnectionContext";
 import { LotrStateResponse, LotrGameState } from "@/types/lotr";
 
 export function useLotrGame(sessionId: number, roomId: number, username: string) {
+  const { reconnectCount } = useConnectionStatus();
   const [lotrState, setLotrState] = useState<LotrGameState | null>(null);
   const [gameStatus, setGameStatus] = useState<string>("IN_PROGRESS");
   const [players, setPlayers] = useState<LotrStateResponse["players"]>([]);
@@ -33,6 +35,19 @@ export function useLotrGame(sessionId: number, roomId: number, username: string)
   useEffect(() => {
     fetchState();
   }, [fetchState]);
+
+  // Re-fetch full LOTR state after a WS reconnect (skips the initial connect —
+  // the mount effect above already fetched). Moves made during the outage are
+  // not broadcast (in-memory broker), so we re-pull parsedState to resync.
+  const initialReconnectSeen = useRef(false);
+  useEffect(() => {
+    if (reconnectCount === 0) return;
+    if (!initialReconnectSeen.current) {
+      initialReconnectSeen.current = true;
+      return;
+    }
+    fetchState();
+  }, [reconnectCount, fetchState]);
 
   useEffect(() => {
     if (!roomId) return;

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { GameRoom, CreateRoomRequest } from "@/types/game";
 import { useAuth } from "@/context/AuthContext";
+import { useConnectionStatus } from "@/context/ConnectionContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
 
@@ -16,6 +17,8 @@ interface RoomEvent {
 
 export default function Home() {
   const { user, loading, logout, isAuthenticated, isGuest } = useAuth();
+  const { status: wsStatus, reconnectCount } = useConnectionStatus();
+  const wsConnected = wsStatus === "connected";
   const router = useRouter();
   const [rooms, setRooms] = useState<GameRoom[]>([]);
   const [myRooms, setMyRooms] = useState<GameRoom[]>([]);
@@ -25,7 +28,6 @@ export default function Home() {
   });
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [joinRoomCode, setJoinRoomCode] = useState("");
-  const [wsConnected, setWsConnected] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -37,12 +39,11 @@ export default function Home() {
     if (isAuthenticated && user) {
       fetchRooms();
       fetchMyRooms();
-      if (!wsConnected) {
+      if (!webSocketService.isConnected()) {
         const token = localStorage.getItem("token");
         if (token) {
           webSocketService.connect(token).then(() => {
             webSocketService.setUsername(user.username);
-            setWsConnected(true);
           }).catch(console.error);
         }
       }
@@ -84,6 +85,21 @@ export default function Home() {
     return () => unsubscribe();
   }, [isAuthenticated, wsConnected]);
 
+  // Re-fetch room lists after a WS reconnect (skips the initial connect). Room
+  // events broadcast during the outage are lost, so we re-pull to resync.
+  const initialReconnectSeen = useRef(false);
+  useEffect(() => {
+    if (reconnectCount === 0) return;
+    if (!initialReconnectSeen.current) {
+      initialReconnectSeen.current = true;
+      return;
+    }
+    if (isAuthenticated) {
+      fetchRooms();
+      fetchMyRooms();
+    }
+  }, [reconnectCount, isAuthenticated]);
+
   const fetchRooms = async () => {
     try {
       const query = showPrivate ? "?includePrivate=true" : "";
@@ -111,7 +127,6 @@ export default function Home() {
 
   const handleLogout = () => {
     webSocketService.disconnect();
-    setWsConnected(false);
     logout();
   };
 
