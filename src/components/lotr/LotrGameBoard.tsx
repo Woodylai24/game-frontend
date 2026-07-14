@@ -1,6 +1,7 @@
 "use client";
 
-import { LotrGameState, LotrPlayerSide, LotrManeuverType, LotrAllianceTokenDef } from "@/types/lotr";
+import { useLotrGameContext } from "@/context/LotrGameContext";
+import { LotrCardDef } from "@/types/lotr";
 import RegionMap from "./RegionMap";
 import QuestTrack from "./QuestTrack";
 import PlayerPanel from "./PlayerPanel";
@@ -17,89 +18,66 @@ import RemoveFortressPanel from "./RemoveFortressPanel";
 import PlaceUnitPanel from "./PlaceUnitPanel";
 import { getCardDef, getLandmarkDef } from "@/lib/lotrCards";
 
-interface Props {
-  state: LotrGameState;
-  isMyTurn: boolean;
-  mySide: LotrPlayerSide | undefined;
-  gameStatus: string;
-  players?: { username: string; side: string }[];
-  onTakeCard: (slotId: number, playOrDiscard: "PLAY" | "DISCARD", chosenRegion?: string) => void;
-  onTakeLandmark: (tileId: string) => void;
-  isManeuverPhase: boolean;
-  pendingManeuvers: LotrManeuverType[];
-  onResolveManeuver: (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => void;
-  isPickDiscardPhase: boolean;
-  isRemoveFortressPhase: boolean;
-  isPlaceUnitPhase: boolean;
-  resolvePickDiscard: (action: string, cardDefId?: string) => void;
-  resolveRemoveFortress: (action: string, targetRegion?: string) => void;
-  resolvePlaceUnit: (action: string, targetRegion?: string) => void;
-  discardPile: string[];
-  isLandmarkPhase: boolean;
-  landmarkSubPhase: string | null;
-  onResolveLandmark: (action: string, data?: Record<string, string>) => void;
-  isAlliancePhase: boolean;
-  allianceDrawnTokens: LotrAllianceTokenDef[];
-  allianceTriggerType: string | null;
-  allianceRace: string | null;
-  onResolveAlliance: (tokenId: string) => void;
-  isAllianceEffectPhase: boolean;
-  onResolveAllianceEffect: (data: Record<string, unknown>) => void;
-  onBackToRoom?: () => void;
-}
+/**
+ * LOTR board layout shell.
+ *
+ * Reads everything from {@link useLotrGameContext} — no props. State ownership
+ * and derivations (me/opponent, winnerSide, phase combinations) live in the
+ * provider. Child components are in the process of migrating to the context too
+ * (still receive props here); each will be converted to consume the context
+ * directly, at which point the prop-forwarding below disappears.
+ */
+export default function LotrGameBoard() {
+  const {
+    state,
+    isMyTurn,
+    mySide,
+    gameStatus,
+    players,
+    isManeuverPhase,
+    isPickDiscardPhase,
+    isRemoveFortressPhase,
+    isPlaceUnitPhase,
+    isLandmarkPhase,
+    isAlliancePhase,
+    isAllianceEffectPhase,
+    takeCard: onTakeCard,
+    takeLandmark: onTakeLandmark,
+    resolveManeuver: onResolveManeuver,
+    resolvePickDiscard,
+    resolveRemoveFortress,
+    resolvePlaceUnit,
+    resolveLandmark: onResolveLandmark,
+    resolveAlliance: onResolveAlliance,
+    resolveAllianceEffect: onResolveAllianceEffect,
+    me,
+    opponent,
+    myPlayedCards,
+    myCoins,
+    fortressCount,
+    isFinished,
+    inInteractivePhase,
+    isLandmarkMovement,
+    winnerSide,
+    isDraw,
+    onBackToRoom,
+  } = useLotrGameContext();
 
-export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, players, onTakeCard, onTakeLandmark, isManeuverPhase, pendingManeuvers, onResolveManeuver, isPickDiscardPhase, isRemoveFortressPhase, isPlaceUnitPhase, resolvePickDiscard, resolveRemoveFortress, resolvePlaceUnit, discardPile, isLandmarkPhase, landmarkSubPhase, onResolveLandmark, isAlliancePhase, allianceDrawnTokens, allianceTriggerType, allianceRace, onResolveAlliance, isAllianceEffectPhase, onResolveAllianceEffect, onBackToRoom }: Props) {
-  const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
-  const opponent = mySide === "FELLOWSHIP" ? state.sauron : state.fellowship;
-
-  const myPlayedCards = me?.playedCardIds ?? [];
-
-  // Build cardDefs map for LandmarkPanel
-  const cardDefsMap: Record<string, import("@/types/lotr").LotrCardDef> = {};
-  for (const cardId of (state.discardPile ?? [])) {
+  // LandmarkPanel-only card-def derivations. TODO(commit 3): move into
+  // LandmarkPanel so this component is a pure layout shell.
+  const cardDefsMap: Record<string, LotrCardDef> = {};
+  for (const cardId of state.discardPile ?? []) {
     const def = getCardDef(cardId);
     if (def) cardDefsMap[cardId] = def;
   }
-  const opponentGreyCards = (opponent?.playedCardIds ?? []).filter(id => {
+  const opponentGreyCards = (opponent?.playedCardIds ?? []).filter((id) => {
     const def = getCardDef(id);
     return def?.color === "GREY";
   });
-  const opponentCardDefs: Record<string, import("@/types/lotr").LotrCardDef> = {};
+  const opponentCardDefs: Record<string, LotrCardDef> = {};
   for (const cardId of opponentGreyCards) {
     const def = getCardDef(cardId);
     if (def) opponentCardDefs[cardId] = def;
-  }
-
-  const fortressCount = (state.regions || []).filter(r => r.fortress === mySide).length;
-  const isFinished = gameStatus === "FINISHED";
-  const inInteractivePhase = isManeuverPhase || isPickDiscardPhase || isRemoveFortressPhase || isPlaceUnitPhase || isLandmarkPhase || isAlliancePhase || isAllianceEffectPhase;
-  const isLandmarkMovement = isLandmarkPhase && landmarkSubPhase === "MOVEMENT";
-
-  let winnerSide: LotrPlayerSide | undefined;
-  let isDraw = false;
-  if (isFinished && state.questTrack) {
-    if (state.questTrack.fellowshipPosition >= 14) {
-      winnerSide = "FELLOWSHIP";
-    } else if (state.questTrack.sauronPosition >= 14) {
-      winnerSide = "SAURON";
-    } else {
-      for (const side of ["FELLOWSHIP", "SAURON"] as const) {
-        const p = state[side.toLowerCase() as "fellowship" | "sauron"];
-        const raceCount = Object.values(p.raceSymbols).filter(v => v > 0).length;
-        if (p.allianceTokenIds.includes("AT-HOBBITS-1")) {
-        }
-        if (raceCount >= 6) winnerSide = side;
-      }
-      if (!winnerSide) {
-        const countRegions = (side: LotrPlayerSide) =>
-          state.regions.filter(r => r.fortress === side || (side === "FELLOWSHIP" ? r.units > 0 : r.units < 0)).length;
-        const fRegions = countRegions("FELLOWSHIP");
-        const sRegions = countRegions("SAURON");
-        if (fRegions > sRegions) winnerSide = "FELLOWSHIP";
-        else if (sRegions > fRegions) winnerSide = "SAURON";
-        else isDraw = true;
-      }
-    }
   }
 
   return (
@@ -125,7 +103,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
         {!isFinished && isManeuverPhase && (
           <div className="px-3 pt-3">
             <ManeuverPanel
-              pendingManeuvers={pendingManeuvers}
+              pendingManeuvers={state.pendingManeuvers ?? []}
               onSkip={() => onResolveManeuver("SKIP")}
             />
           </div>
@@ -134,7 +112,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
         {!isFinished && isPickDiscardPhase && (
           <div className="px-3 pt-3">
             <PickDiscardPanel
-              discardPile={discardPile}
+              discardPile={state.discardPile ?? []}
               onResolve={resolvePickDiscard}
             />
           </div>
@@ -150,16 +128,14 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
 
         {!isFinished && isPlaceUnitPhase && (
           <div className="px-3 pt-3">
-            <PlaceUnitPanel
-              onSkip={() => resolvePlaceUnit("SKIP")}
-            />
+            <PlaceUnitPanel onSkip={() => resolvePlaceUnit("SKIP")} />
           </div>
         )}
 
         {!isFinished && isLandmarkPhase && !isLandmarkMovement && (
           <div className="px-3 pt-3">
             <LandmarkPanel
-              subPhase={landmarkSubPhase ?? ""}
+              subPhase={state.landmarkSubPhase ?? ""}
               movementsRemaining={state.landmarkMovementsRemaining}
               discardPile={state.discardPile}
               cardDefs={cardDefsMap}
@@ -212,8 +188,33 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
 
       <div className="flex-1 flex flex-col lg:flex-row gap-3 p-3 overflow-auto">
         <div className="lg:w-48 flex-shrink-0 space-y-3">
-          {me && <PlayerPanel player={me} isCurrentTurn={isMyTurn} playerName={players?.find(p => p.side === mySide)?.username} takenLandmarks={(me.takenLandmarkIds ?? []).map(getLandmarkDef).filter((d): d is { id: string; name: string; effect: string } => !!d)} />}
-          {opponent && <PlayerPanel player={opponent} isCurrentTurn={!isMyTurn} isOpponent playerName={players?.find(p => p.side !== mySide)?.username} takenLandmarks={(opponent.takenLandmarkIds ?? []).map(getLandmarkDef).filter((d): d is { id: string; name: string; effect: string } => !!d)} />}
+          {me && (
+            <PlayerPanel
+              player={me}
+              isCurrentTurn={isMyTurn}
+              playerName={players?.find((p) => p.side === mySide)?.username}
+              takenLandmarks={(me.takenLandmarkIds ?? [])
+                .map(getLandmarkDef)
+                .filter(
+                  (d): d is { id: string; name: string; effect: string } =>
+                    !!d,
+                )}
+            />
+          )}
+          {opponent && (
+            <PlayerPanel
+              player={opponent}
+              isCurrentTurn={!isMyTurn}
+              isOpponent
+              playerName={players?.find((p) => p.side !== mySide)?.username}
+              takenLandmarks={(opponent.takenLandmarkIds ?? [])
+                .map(getLandmarkDef)
+                .filter(
+                  (d): d is { id: string; name: string; effect: string } =>
+                    !!d,
+                )}
+            />
+          )}
         </div>
 
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-w-0">
@@ -224,7 +225,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
               isMyTurn={!inInteractivePhase && isMyTurn}
               onTakeCard={onTakeCard}
               myPlayedCards={myPlayedCards}
-              myCoins={me?.coins ?? 0}
+              myCoins={myCoins}
               myAllianceTokenIds={me?.allianceTokenIds}
             />
           </div>
@@ -235,7 +236,7 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
                   regions={state.regions}
                   mySide={mySide}
                   isManeuverPhase={!isFinished && isManeuverPhase}
-                  pendingManeuvers={pendingManeuvers}
+                  pendingManeuvers={state.pendingManeuvers ?? []}
                   onResolveManeuver={onResolveManeuver}
                   isRemoveFortressPhase={!isFinished && isRemoveFortressPhase}
                   isPlaceUnitPhase={!isFinished && isPlaceUnitPhase}
@@ -245,14 +246,17 @@ export default function LotrGameBoard({ state, isMyTurn, mySide, gameStatus, pla
                   onResolveLandmark={onResolveLandmark}
                 />
               </div>
-              <QuestTrack questTrack={state.questTrack} bonusPosition={state.bonusPosition} />
+              <QuestTrack
+                questTrack={state.questTrack}
+                bonusPosition={state.bonusPosition}
+              />
             </div>
 
             <div className="order-1 lg:order-2">
               <LandmarkTiles
                 landmarks={state.landmarkTiles}
                 isMyTurn={!inInteractivePhase && isMyTurn}
-                myCoins={me?.coins ?? 0}
+                myCoins={myCoins}
                 myPlayedCards={myPlayedCards}
                 fortressCount={fortressCount}
                 onTakeLandmark={onTakeLandmark}

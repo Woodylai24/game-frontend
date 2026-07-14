@@ -8,11 +8,7 @@ import { useConnectionStatus } from "@/context/ConnectionContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
 import TicTacToeBoard from "@/components/TicTacToeBoard";
-import { useLotrGame } from "@/hooks/useLotrGame";
-import { useChat } from "@/hooks/useChat";
-import LotrGameBoard from "@/components/lotr/LotrGameBoard";
-import PlayerAidModal from "@/components/lotr/PlayerAidModal";
-import ChatBottomSheet from "@/components/lotr/ChatBottomSheet";
+import LotrGameView from "@/components/lotr/LotrGameView";
 
 export default function GamePage() {
   const params = useParams();
@@ -25,21 +21,7 @@ export default function GamePage() {
   const [error, setError] = useState("");
   const [gameType, setGameType] = useState<string>("");
 
-  // Also check if LOTR state loads successfully as fallback
   const username = user?.username || "";
-
-  const lotr = useLotrGame(sessionId, sessionData?.roomId ?? 0, username);
-
-  const chat = useChat(sessionData?.roomId ?? 0, username);
-  const [showPlayerAid, setShowPlayerAid] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-
-  // If LOTR state loaded successfully, it's a LOTR game
-  useEffect(() => {
-    if (lotr.lotrState && !gameType) {
-      setGameType("LOTR");
-    }
-  }, [lotr.lotrState]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -123,7 +105,7 @@ export default function GamePage() {
       apiFetch(`/api/rooms/code/${sessionData.roomCode}`)
         .then(r => r.json())
         .then(room => setGameType(room.gameType || ""))
-        .catch(() => {});
+        .catch(() => setError("Failed to load game"));
     }
   }, [sessionData?.roomCode]);
 
@@ -188,76 +170,28 @@ export default function GamePage() {
     );
   }
 
-  if (gameType === "LOTR" && lotr.lotrState) {
+  // gameType is resolved from the room record (the effect at sessionData?.roomCode).
+  // Until it arrives, hold on the loading screen so we don't flash the wrong game
+  // board — the default branch below renders Tic-Tac-Toe, which is wrong for LOTR.
+  if (!gameType) {
     return (
-      <div className="min-h-screen bg-gray-950">
-        {lotr.error && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm z-50 shadow-lg">
-            {lotr.error}
-          </div>
-        )}
-        <LotrGameBoard
-          state={lotr.lotrState}
-          isMyTurn={lotr.isMyTurn}
-          mySide={lotr.mySide as "FELLOWSHIP" | "SAURON" | undefined}
-          gameStatus={lotr.gameStatus}
-          players={lotr.players}
-          onTakeCard={lotr.takeCard}
-          onTakeLandmark={lotr.takeLandmark}
-          isManeuverPhase={lotr.isManeuverPhase}
-          pendingManeuvers={lotr.lotrState?.pendingManeuvers ?? []}
-          onResolveManeuver={lotr.resolveManeuver}
-          isPickDiscardPhase={lotr.isPickDiscardPhase}
-          isRemoveFortressPhase={lotr.isRemoveFortressPhase}
-          isPlaceUnitPhase={lotr.isPlaceUnitPhase}
-          resolvePickDiscard={lotr.resolvePickDiscard}
-          resolveRemoveFortress={lotr.resolveRemoveFortress}
-          resolvePlaceUnit={lotr.resolvePlaceUnit}
-          discardPile={lotr.lotrState?.discardPile ?? []}
-          isLandmarkPhase={lotr.isLandmarkPhase}
-          landmarkSubPhase={lotr.lotrState?.landmarkSubPhase ?? null}
-          onResolveLandmark={lotr.resolveLandmark}
-          isAlliancePhase={lotr.isAlliancePhase}
-          allianceDrawnTokens={lotr.lotrState?.allianceDrawnTokens ?? []}
-          allianceTriggerType={lotr.lotrState?.allianceTriggerType ?? null}
-          allianceRace={lotr.lotrState?.allianceRace ?? null}
-          onResolveAlliance={lotr.resolveAlliance}
-          isAllianceEffectPhase={lotr.isAllianceEffectPhase}
-          onResolveAllianceEffect={lotr.resolveAllianceEffect}
-          onBackToRoom={handleBackToRoom}
-        />
-
-        {/* Sticky action buttons */}
-        <div className="fixed bottom-4 right-4 z-30 flex gap-2">
-          <button
-            onClick={() => setShowPlayerAid(true)}
-            className="bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-2 rounded-lg text-xs font-medium shadow-lg border border-gray-700"
-          >
-            Player Aid
-          </button>
-          <button
-            onClick={() => setShowChat(true)}
-            className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-medium shadow-lg"
-          >
-            Chat
-          </button>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading game...</p>
         </div>
-
-        {/* Mobile spacer so content can scroll past sticky buttons */}
-        <div className="h-16 lg:hidden" />
-
-        {/* Modals */}
-        {showPlayerAid && <PlayerAidModal onClose={() => setShowPlayerAid(false)} />}
-        {showChat && (
-          <ChatBottomSheet
-            messages={chat.messages}
-            username={username}
-            onSend={chat.sendMessage}
-            onClose={() => setShowChat(false)}
-            players={lotr.players}
-          />
-        )}
       </div>
+    );
+  }
+
+  if (gameType === "LOTR") {
+    return (
+      <LotrGameView
+        sessionId={sessionId}
+        roomId={sessionData.roomId}
+        username={username}
+        onBackToRoom={handleBackToRoom}
+      />
     );
   }
 
