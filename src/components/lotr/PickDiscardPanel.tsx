@@ -3,13 +3,11 @@
 import { useState } from "react";
 import { getCardImagePath } from "@/types/lotr";
 import { getCardDef } from "@/lib/lotrCards";
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
-interface Props {
-  discardPile: string[];
-  onResolve: (action: string, cardDefId?: string) => void;
-}
-
-export default function PickDiscardPanel({ discardPile, onResolve }: Props) {
+export default function PickDiscardPanel() {
+  const { state, resolvePickDiscard } = useLotrGameContext();
+  const discardPile = state.discardPile ?? [];
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
 
   return (
@@ -36,12 +34,12 @@ export default function PickDiscardPanel({ discardPile, onResolve }: Props) {
       </div>
       <div className="flex gap-2">
         <button
-          onClick={() => selectedCard && onResolve("PICK", selectedCard)}
+          onClick={() => selectedCard && resolvePickDiscard("PICK", selectedCard)}
           disabled={!selectedCard}
           className="bg-violet-600 hover:bg-violet-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-4 py-1.5 rounded text-sm font-bold">
           Confirm
         </button>
-        <button onClick={() => onResolve("SKIP")}
+        <button onClick={() => resolvePickDiscard("SKIP")}
           className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-sm font-bold">
           Skip
         </button>

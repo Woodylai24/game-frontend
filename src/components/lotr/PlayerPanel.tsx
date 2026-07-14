@@ -2,19 +2,34 @@
 
 import { useState } from "react";
 import { LotrPlayerState, LotrCardColor, LotrRace, LotrSkill, getCardImagePath, getRaceIconPath, getSkillIconPath, getLandmarkImagePath } from "@/types/lotr";
-import { getCardDef, getTokenDef } from "@/lib/lotrCards";
+import { getCardDef, getTokenDef, getLandmarkDef } from "@/lib/lotrCards";
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
 const COLOR_ORDER: LotrCardColor[] = ["RED", "GREEN", "BLUE", "GREY", "PURPLE", "YELLOW"];
 
 interface Props {
+  /** Which player to render — `me` or `opponent` from context. */
   player: LotrPlayerState;
   isCurrentTurn: boolean;
   isOpponent?: boolean;
-  playerName?: string;
-  takenLandmarks?: { id: string; name: string; effect: string }[];
 }
 
-export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerName, takenLandmarks }: Props) {
+/**
+ * Renders one player's panel. `player`/`isCurrentTurn`/`isOpponent` are genuine
+ * per-instance parameters (rendered twice — once for me, once for opponent), so
+ * they stay as props. The player's display name is looked up from context.
+ */
+export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props) {
+  const { players, mySide } = useLotrGameContext();
+
+  const playerName = isOpponent
+    ? players?.find(p => p.side !== mySide)?.username
+    : players?.find(p => p.side === mySide)?.username;
+
+  const takenLandmarks = (player.takenLandmarkIds ?? [])
+    .map(getLandmarkDef)
+    .filter((d): d is { id: string; name: string; effect: string } => !!d);
+
   const sortedCards = [...player.playedCardIds].sort((a, b) => {
     const da = getCardDef(a);
     const db = getCardDef(b);
@@ -89,24 +104,24 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent, playerN
         )}
       </div>
 
-      {(takenLandmarks ?? []).length > 0 && (
+      {takenLandmarks.length > 0 && (
         <div className="mt-2">
           <button
             onClick={() => setLandmarksExpanded(e => !e)}
             className="flex items-center gap-1 text-[10px] text-gray-400 mb-1 hover:text-gray-200 w-full text-left"
           >
             <span className="text-[8px]">{landmarksExpanded ? "▼" : "▶"}</span>
-            Taken Landmarks ({takenLandmarks!.length})
+            Taken Landmarks ({takenLandmarks.length})
           </button>
           {landmarksExpanded && (
             <div
               className="relative overflow-hidden"
-              style={{ height: `${100 + (takenLandmarks!.length - 1) * 25}px` }}
+              style={{ height: `${100 + (takenLandmarks.length - 1) * 25}px` }}
             >
-              {[...takenLandmarks!].map((tile, i) => (
+              {[...takenLandmarks].map((tile, i) => (
                 <div key={tile.id}
                   className="absolute overflow-hidden rounded border border-gray-600"
-                  style={{ top: `${(takenLandmarks!.length - 1 - i) * 25}px`, height: "100px", width: "100px", zIndex: i }}>
+                  style={{ top: `${(takenLandmarks.length - 1 - i) * 25}px`, height: "100px", width: "100px", zIndex: i }}>
                   <img src={getLandmarkImagePath(tile.id)} alt={tile.name}
                     className="w-full h-full object-cover object-bottom" title={tile.effect} />
                 </div>
