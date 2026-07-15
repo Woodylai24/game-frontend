@@ -22,10 +22,6 @@ export default function Home() {
   const router = useRouter();
   const [rooms, setRooms] = useState<GameRoom[]>([]);
   const [myRooms, setMyRooms] = useState<GameRoom[]>([]);
-  const [showPrivate, setShowPrivate] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('showPrivate') === 'true';
-    return false;
-  });
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [joinRoomCode, setJoinRoomCode] = useState("");
 
@@ -54,7 +50,7 @@ export default function Home() {
     if (!isAuthenticated) return;
     fetchRooms();
     fetchMyRooms();
-  }, [isAuthenticated, user, showPrivate]);
+  }, [isAuthenticated, user]);
 
   useEffect(() => {
     if (!isAuthenticated || !wsConnected) return;
@@ -63,8 +59,13 @@ export default function Home() {
       "/topic/rooms",
       (event) => {
         if (event.type === "ROOM_CREATED") {
-          setRooms((prev) => [event.room, ...prev]);
-          // Only add to myRooms if user is the host
+          // Private rooms never appear in the public grid. Defense-in-depth:
+          // the backend no longer broadcasts private rooms to /topic/rooms,
+          // but skip them here too in case of a regression.
+          if (!event.room.isPrivate) {
+            setRooms((prev) => [event.room, ...prev]);
+          }
+          // Host always sees their own room in "Your Rooms"
           if (event.room.hostUsername === user?.username) {
             setMyRooms((prev) => [event.room, ...prev]);
           }
@@ -102,8 +103,7 @@ export default function Home() {
 
   const fetchRooms = async () => {
     try {
-      const query = showPrivate ? "?includePrivate=true" : "";
-      const response = await apiFetch("/api/rooms" + query);
+      const response = await apiFetch("/api/rooms");
       if (response.ok) {
         const roomsData = await response.json();
         setRooms(roomsData);
@@ -287,19 +287,6 @@ export default function Home() {
               >
                 Refresh
               </button>
-              <label className="flex items-center space-x-1 text-sm text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={showPrivate}
-                  onChange={(e) => {
-                    const val = e.target.checked;
-                    localStorage.setItem('showPrivate', String(val));
-                    setShowPrivate(val);
-                  }}
-                  className="rounded"
-                />
-                <span>Show private rooms</span>
-              </label>
             </div>
           </div>
 
