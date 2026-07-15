@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { GameSessionData, GameWsEvent } from "@/types/game";
+import { GameSessionData } from "@/types/game";
 import { useAuth } from "@/context/AuthContext";
 import { useConnectionStatus } from "@/context/ConnectionContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
-import TicTacToeBoard from "@/components/TicTacToeBoard";
 import LotrGameView from "@/components/lotr/LotrGameView";
+import TicTacToeGameView from "@/components/TicTacToeGameView";
 
 export default function GamePage() {
   const params = useParams();
@@ -68,7 +68,7 @@ export default function GamePage() {
     if (!username) return;
     const init = async () => {
       // Connect WS BEFORE fetching session. fetchSession() sets sessionData,
-      // which triggers the subscription effects (useLotrGame + the page's own).
+      // which triggers the subscription effects (useLotrGame + the TTT hook).
       // If connect runs after, those effects fire while disconnected. The
       // subscription registry in websocket.ts now queues them regardless, but
       // connect-first is the correct, intent-revealing order.
@@ -92,15 +92,6 @@ export default function GamePage() {
   }, [reconnectCount, fetchSession]);
 
   useEffect(() => {
-    if (!sessionData) return;
-    const unsub = webSocketService.subscribeToGameEvents(
-      sessionData.roomId,
-      (event: GameWsEvent) => { handleGameEvent(event); },
-    );
-    return unsub;
-  }, [sessionData?.roomId]);
-
-  useEffect(() => {
     if (sessionData?.roomCode) {
       apiFetch(`/api/rooms/code/${sessionData.roomCode}`)
         .then(r => r.json())
@@ -108,36 +99,6 @@ export default function GamePage() {
         .catch(() => setError("Failed to load game"));
     }
   }, [sessionData?.roomCode]);
-
-  const handleGameEvent = useCallback(
-    (event: GameWsEvent) => {
-      switch (event.event) {
-        case "move":
-          setSessionData((prev) =>
-            prev ? { ...prev, board: event.board, currentPlayerOrder: event.currentPlayerOrder, currentTurn: event.currentTurn, gameStatus: event.gameStatus as GameSessionData["gameStatus"] } : prev,
-          );
-          break;
-        case "game_ended":
-          setSessionData((prev) =>
-            prev ? { ...prev, gameStatus: event.gameStatus as GameSessionData["gameStatus"], winnerUsername: event.winnerUsername, ...(event.gameSession ? { players: event.gameSession.players } : {}) } : prev,
-          );
-          break;
-        case "return_to_lobby":
-          router.push(`/room/${sessionData?.roomCode}`);
-          break;
-      }
-    },
-    [sessionData?.roomCode, router],
-  );
-
-  const handleCellClick = (row: number, col: number) => {
-    if (!sessionData) return;
-    webSocketService.makeMove(sessionData.roomId, username, row, col);
-  };
-
-  const handleBackToRoom = () => {
-    if (sessionData) router.push(`/room/${sessionData.roomCode}`);
-  };
 
   if (loading || !isAuthenticated || !user) {
     return (
@@ -172,7 +133,7 @@ export default function GamePage() {
 
   // gameType is resolved from the room record (the effect at sessionData?.roomCode).
   // Until it arrives, hold on the loading screen so we don't flash the wrong game
-  // board — the default branch below renders Tic-Tac-Toe, which is wrong for LOTR.
+  // board before we know which view to render.
   if (!gameType) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -190,42 +151,14 @@ export default function GamePage() {
         sessionId={sessionId}
         roomId={sessionData.roomId}
         username={username}
-        onBackToRoom={handleBackToRoom}
+        onBackToRoom={() => router.push(`/room/${sessionData.roomCode}`)}
       />
     );
   }
 
-  const isFinished = sessionData.gameStatus === "FINISHED";
-  const isDraw = isFinished && sessionData.winnerUsername === null;
-
+  // Default: Tic-Tac-Toe (dev only — hidden from the prod build and rejected
+  // server-side under the prod profile).
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-xl font-semibold">{isFinished ? "Game Over" : "Game in Progress"}</h1>
-              <p className="text-sm text-gray-600">Session #{sessionId}</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Playing as: {username}</span>
-              <button onClick={handleBackToRoom} className="text-sm bg-gray-200 px-3 py-1.5 rounded-md hover:bg-gray-300">Back to Room</button>
-            </div>
-          </div>
-        </div>
-      </header>
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          {isFinished && (
-            <div className="text-center mb-6">
-              <div className="text-2xl font-bold">
-                {isDraw ? <span className="text-yellow-600">Game Over — Draw!</span> : <span className="text-green-600">Game Over — {sessionData.winnerUsername} wins!</span>}
-              </div>
-            </div>
-          )}
-          <TicTacToeBoard board={sessionData.board} currentPlayerOrder={sessionData.currentPlayerOrder} players={sessionData.players} username={username} gameStatus={sessionData.gameStatus} winnerUsername={sessionData.winnerUsername} isDraw={isDraw} onCellClick={handleCellClick} />
-        </div>
-      </main>
-    </div>
+    <TicTacToeGameView session={sessionData} username={username} />
   );
 }
