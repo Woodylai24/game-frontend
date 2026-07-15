@@ -3,12 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LotrLogEntry } from "@/types/lotr";
 import { getCardDef, getCardEffectText, getLandmarkDef, getTokenDef } from "@/lib/lotrCards";
-
-interface Props {
-  gameLog: LotrLogEntry[];
-  players?: { username: string; side: string }[];
-  mySide?: "FELLOWSHIP" | "SAURON";
-}
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
 const ROMAN = ["", "I", "II", "III"];
 
@@ -36,7 +31,10 @@ const ChevronUp = () => (
   </svg>
 );
 
-export default function GameLogBar({ gameLog, players, mySide }: Props) {
+export default function GameLogBar() {
+  const { state, players, mySide } = useLotrGameContext();
+  const gameLog = state.gameLog ?? [];
+
   const [expanded, setExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 

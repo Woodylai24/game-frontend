@@ -23,9 +23,13 @@ export default function LoginPage() {
     ? "Google login failed. Please try again."
     : searchParamsError === "oauth_no_email"
       ? "Google account did not provide an email."
-      : searchParamsError === "oauth_no_token"
-        ? "Authentication failed. Please try again."
-        : "");
+      : searchParamsError === "oauth_email_not_verified"
+        ? "Your Google email is not verified. Verify it in your Google account and try again."
+        : searchParamsError === "oauth_email_exists"
+          ? "An account with this email already exists."
+          : searchParamsError === "oauth_no_token"
+            ? "Authentication failed. Please try again."
+            : "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

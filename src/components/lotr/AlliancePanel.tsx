@@ -1,21 +1,20 @@
 "use client";
 
-import { LotrAllianceTokenDef, LotrRace, getRaceIconPath } from "@/types/lotr";
-
-interface Props {
-  triggerType: string;
-  race?: string | null;
-  drawnTokens: LotrAllianceTokenDef[];
-  onSelectToken: (tokenId: string) => void;
-  readOnly?: boolean;
-}
+import { LotrRace, getRaceIconPath } from "@/types/lotr";
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
 const RACE_LABELS: Record<string, string> = {
   ELVES: "Elves", ENTS: "Ents", HOBBITS: "Hobbits",
   HUMANS: "Humans", DWARVES: "Dwarves", WIZARDS: "Wizards",
 };
 
-export default function AlliancePanel({ triggerType, race, drawnTokens, onSelectToken, readOnly }: Props) {
+export default function AlliancePanel() {
+  const { state, isAlliancePhase, resolveAlliance } = useLotrGameContext();
+  const triggerType = state.allianceTriggerType ?? "";
+  const race = state.allianceRace;
+  const drawnTokens = state.allianceDrawnTokens ?? [];
+  const readOnly = !isAlliancePhase;
+
   if (drawnTokens.length === 0) return null;
 
   const subject = readOnly ? "Opponent" : "You";
@@ -39,7 +38,7 @@ export default function AlliancePanel({ triggerType, race, drawnTokens, onSelect
         {drawnTokens.map(token => (
           <button
             key={token.id}
-            onClick={() => !readOnly && onSelectToken(token.id)}
+            onClick={() => !readOnly && resolveAlliance(token.id)}
             disabled={readOnly}
             className={`bg-gray-800 border-2 border-teal-600 rounded-lg p-3 w-44 text-left transition-colors
               ${readOnly ? "cursor-default opacity-80" : "hover:border-teal-400 hover:bg-gray-700 cursor-pointer"}`}

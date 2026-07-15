@@ -2,16 +2,15 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { LotrQuestTrack, getBonusIconPath } from "@/types/lotr";
-
-interface Props {
-  questTrack: LotrQuestTrack;
-  bonusPosition?: number;
-}
+import { getBonusIconPath } from "@/types/lotr";
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
 const BONUS_SPACES = [3, 6, 9, 12];
 
-export default function QuestTrack({ questTrack, bonusPosition }: Props) {
+export default function QuestTrack() {
+  const { state } = useLotrGameContext();
+  const questTrack = state.questTrack;
+  const bonusPosition = state.bonusPosition;
   const spaces = Array.from({ length: 15 }, (_, i) => i);
 
   return (

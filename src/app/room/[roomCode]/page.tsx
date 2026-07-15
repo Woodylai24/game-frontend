@@ -87,90 +87,75 @@ export default function RoomPage() {
         }
 
         const roomId = roomData.id;
+        // Holds every subscription created during this join attempt. The
+        // join-response subscription is added immediately; room-scoped
+        // subscriptions are added once join succeeds. All are registered with
+        // setUnsubscribeFunctions so the effect cleanup un-subscribes them on unmount.
         const unsubscribes: (() => void)[] = [];
 
-        // Subscribe to all room topics upfront
-        // subscribeToRoomPlayers uses @SubscribeMapping which returns initial room data,
-        // but we only set room state after join confirmation
-        let joinConfirmed = false;
-        let pendingRoomData: GameRoom | null = null;
-
-        const unsubscribeRoomPlayers = webSocketService.subscribeToRoomPlayers(
-          roomId,
-          (updatedRoom) => {
-            // Only show room data after join is confirmed
-            if (joinConfirmed) {
-              setRoom(updatedRoom);
-            } else {
-              pendingRoomData = updatedRoom;
-            }
-          },
-        );
-        unsubscribes.push(unsubscribeRoomPlayers);
-
-        const unsubscribeChat = webSocketService.subscribeToRoomChat(
-          roomId,
-          (message) => {
-            setChatMessages((prev) => [...prev, message]);
-            saveChatMessage(roomId, message);
-          },
-        );
-        unsubscribes.push(unsubscribeChat);
-
-        const unsubscribeReady = webSocketService.subscribeToReadyStatus(
-          roomId,
-          (data) => {
-            setRoom((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    players: prev.players.map((p) =>
-                      p.username === data.username
-                        ? { ...p, isReady: data.ready }
-                        : p,
-                    ),
-                  }
-                : prev,
-            );
-          },
-        );
-        unsubscribes.push(unsubscribeReady);
-
-        const unsubscribeGameEvents =
-          webSocketService.subscribeToGameEvents(roomId, (event) => {
-            handleGameEvent(event);
-          });
-        unsubscribes.push(unsubscribeGameEvents);
-
-        const unsubscribeJoinResponse =
+        // Subscribe to the join-response topic first, THEN send the join.
+        // The backend's StompAuthInterceptor rejects room-scoped subscriptions
+        // from non-members, so we must wait for join confirmation before
+        // subscribing to /topic/room/{roomId}/* topics.
+        unsubscribes.push(
           webSocketService.subscribeToUserJoinResponse(
             username,
             (joinRes: unknown) => {
               const res = joinRes as { success?: boolean; message?: string; error?: string; room?: GameRoom };
-              if (res.success) {
-                joinConfirmed = true;
-                setHasJoined(true);
-                // Use room from join response, or the pending data from @SubscribeMapping
-                setRoom(res.room || pendingRoomData || roomData);
-                // Load persisted chat messages
-                setChatMessages(loadChatMessages(roomId));
-                setUnsubscribeFunctions(unsubscribes);
-              } else {
-                // Join failed (e.g., wrong password) — clean up subscriptions
+              if (!res.success) {
+                // Join failed (e.g., wrong password) — clean up and surface error
                 unsubscribes.forEach((fn) => fn());
                 setError(res.error || res.message || "Failed to join room");
+                return;
               }
+
+              setHasJoined(true);
+              setRoom(res.room || roomData);
+              // Load persisted chat messages
+              setChatMessages(loadChatMessages(roomId));
+
+              // Now that membership is confirmed, subscribe to room topics.
+              // @SubscribeMapping returns the current room roster immediately.
+              unsubscribes.push(
+                webSocketService.subscribeToRoomPlayers(roomId, (updatedRoom) => {
+                  setRoom(updatedRoom);
+                }),
+              );
+              unsubscribes.push(
+                webSocketService.subscribeToRoomChat(roomId, (message) => {
+                  setChatMessages((prev) => [...prev, message]);
+                  saveChatMessage(roomId, message);
+                }),
+              );
+              unsubscribes.push(
+                webSocketService.subscribeToReadyStatus(roomId, (data) => {
+                  setRoom((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          players: prev.players.map((p) =>
+                            p.username === data.username
+                              ? { ...p, isReady: data.ready }
+                              : p,
+                          ),
+                        }
+                      : prev,
+                  );
+                }),
+              );
+              unsubscribes.push(
+                webSocketService.subscribeToGameEvents(roomId, (event) => {
+                  handleGameEvent(event);
+                }),
+              );
+
+              setUnsubscribeFunctions([...unsubscribes]);
             },
-          );
-        unsubscribes.push(unsubscribeJoinResponse);
+          ),
+        );
 
         // Send join with password
-        webSocketService.joinRoom(
-          roomId,
-          roomCode,
-          username,
-          roomPassword,
-        );
+        webSocketService.joinRoom(roomId, roomCode, username, roomPassword);
       } catch (error) {
         console.error("Failed to connect and join room:", error);
         setError("Failed to connect to room");
@@ -219,8 +204,9 @@ export default function RoomPage() {
   }, [connectAndJoinRoom, intentionalLeave, hasJoined]);
 
   // Re-sync room state after a WS reconnect (skips the initial connect —
-  // connectAndJoinRoom already fetched). The 5 subscriptions auto-replay via
-  // the websocket.ts registry, so we don't re-join; we just re-pull state to
+  // connectAndJoinRoom already fetched). The subscriptions auto-replay via
+  // the websocket.ts registry (join-response + room topics), so we don't
+  // re-join; we just re-pull state to
   // catch anything broadcast during the outage. If the room was deleted while
   // we were disconnected, redirect home with a message.
   const initialReconnectSeen = useRef(false);
@@ -538,7 +524,7 @@ export default function RoomPage() {
                           Host
                         </span>
                       )}
-                      {isGameActive && (
+                      {isGameActive && room.gameType === "TicTacToe" && (
                         <span
                           className={`text-xs font-bold ${player.playerOrder === 0 ? "text-blue-600" : "text-red-600"}`}
                         >
