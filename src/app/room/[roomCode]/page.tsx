@@ -538,7 +538,7 @@ export default function RoomPage() {
                           Host
                         </span>
                       )}
-                      {isGameActive && (
+                      {isGameActive && room.gameType === "TicTacToe" && (
                         <span
                           className={`text-xs font-bold ${player.playerOrder === 0 ? "text-blue-600" : "text-red-600"}`}
                         >
