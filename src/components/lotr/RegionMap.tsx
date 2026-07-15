@@ -1,28 +1,33 @@
 "use client";
 
 import { useState } from "react";
-import { LotrRegionState, LotrPlayerSide, LotrRegion, LotrManeuverType, REGION_ADJACENCY, REGION_POSITIONS, getRegionIconPath } from "@/types/lotr";
-
-interface Props {
-  regions: LotrRegionState[];
-  mySide?: LotrPlayerSide;
-  isManeuverPhase?: boolean;
-  pendingManeuvers?: LotrManeuverType[];
-  onResolveManeuver?: (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => void;
-  isRemoveFortressPhase?: boolean;
-  isPlaceUnitPhase?: boolean;
-  onResolveRemoveFortress?: (action: string, targetRegion: string) => void;
-  onResolvePlaceUnit?: (action: string, targetRegion: string) => void;
-  isLandmarkMovement?: boolean;
-  onResolveLandmark?: (action: string, data?: Record<string, string>) => void;
-}
+import { LotrRegion, LotrRegionState, LotrManeuverType, REGION_ADJACENCY, REGION_POSITIONS, getRegionIconPath } from "@/types/lotr";
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
 const REGION_LABELS: Record<LotrRegion, string> = {
   LINDON: "Lindon", ARNOR: "Arnor", RHOVANION: "Rhovanion",
   ENEDWAITH: "Enedwaith", ROHAN: "Rohan", GONDOR: "Gondor", MORDOR: "Mordor",
 };
 
-export default function RegionMap({ regions, mySide, isManeuverPhase, pendingManeuvers, onResolveManeuver, isRemoveFortressPhase, isPlaceUnitPhase, onResolveRemoveFortress, onResolvePlaceUnit, isLandmarkMovement, onResolveLandmark }: Props) {
+export default function RegionMap() {
+  const {
+    state, mySide, isFinished,
+    isManeuverPhase, isRemoveFortressPhase, isPlaceUnitPhase, isLandmarkMovement,
+    resolveManeuver: onResolveManeuver,
+    resolveRemoveFortress: onResolveRemoveFortress,
+    resolvePlaceUnit: onResolvePlaceUnit,
+    resolveLandmark: onResolveLandmark,
+  } = useLotrGameContext();
+
+  const regions = state.regions;
+  const pendingManeuvers = (state.pendingManeuvers ?? []) as LotrManeuverType[];
+  // The board used to gate these with !isFinished; replicate that so the map
+  // stays non-interactive once the game is over.
+  const activeManeuver = !isFinished && isManeuverPhase;
+  const activeRemoveFortress = !isFinished && isRemoveFortressPhase;
+  const activePlaceUnit = !isFinished && isPlaceUnitPhase;
+  const activeLandmarkMovement = !isFinished && isLandmarkMovement;
+
   const [selectedFromRegion, setSelectedFromRegion] = useState<LotrRegion | null>(null);
   const [selectedToRegion, setSelectedToRegion] = useState<LotrRegion | null>(null);
   const [pendingRemoveRegion, setPendingRemoveRegion] = useState<LotrRegion | null>(null);
@@ -60,14 +65,14 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
     if (!state) return;
 
     // Place unit phase — ALL regions clickable
-    if (isPlaceUnitPhase && onResolvePlaceUnit) {
+    if (activePlaceUnit) {
       if (pendingPhaseRegion || pendingRemoveRegion || selectedToRegion) return;
       setPendingPhaseRegion(region);
       return;
     }
 
     // Remove fortress phase — only enemy fortress regions clickable
-    if (isRemoveFortressPhase && onResolveRemoveFortress) {
+    if (activeRemoveFortress) {
       if (pendingPhaseRegion || pendingRemoveRegion || selectedToRegion) return;
       if (isEnemyFortress(state)) {
         setPendingPhaseRegion(region);
@@ -75,7 +80,7 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
       return;
     }
 
-    if (isLandmarkMovement && onResolveLandmark && mySide) {
+    if (activeLandmarkMovement && mySide) {
       if (selectedFromRegion && !selectedToRegion) {
         if (selectedFromRegion === region) {
           setSelectedFromRegion(null);
@@ -97,7 +102,7 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
       return;
     }
 
-    if (!isManeuverPhase || !onResolveManeuver || !mySide) return;
+    if (!activeManeuver || !mySide) return;
 
     // If selecting move destination
     if (selectedFromRegion && !selectedToRegion) {
@@ -157,16 +162,16 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
           const sauronUnits = Math.max(0, -(state?.units ?? 0));
           const fortressOwner = state?.fortress;
 
-          const isRemoveTarget = isManeuverPhase && hasRemoveEnemy && isClickableForRemove(state);
-          const isMoveSource = isManeuverPhase && hasMoveUnit && isClickableForMove(state) && !selectedFromRegion && !pendingRemoveRegion;
+          const isRemoveTarget = activeManeuver && hasRemoveEnemy && isClickableForRemove(state);
+          const isMoveSource = activeManeuver && hasMoveUnit && isClickableForMove(state) && !selectedFromRegion && !pendingRemoveRegion;
           const isSelected = selectedFromRegion === region;
           const isMoveTarget = selectedFromRegion && !selectedToRegion && isAdjacentToSelected(region);
 
-          const isPlaceUnitTarget = isPlaceUnitPhase && !pendingPhaseRegion;
-          const isRemoveFortressTarget = isRemoveFortressPhase && isEnemyFortress(state) && !pendingPhaseRegion;
+          const isPlaceUnitTarget = activePlaceUnit && !pendingPhaseRegion;
+          const isRemoveFortressTarget = activeRemoveFortress && isEnemyFortress(state) && !pendingPhaseRegion;
 
-          const isLandmarkMoveSource = isLandmarkMovement && isClickableForMove(state) && !selectedFromRegion;
-          const isLandmarkMoveTarget = isLandmarkMovement && selectedFromRegion && !selectedToRegion && isAdjacentToSelected(region);
+          const isLandmarkMoveSource = activeLandmarkMovement && isClickableForMove(state) && !selectedFromRegion;
+          const isLandmarkMoveTarget = activeLandmarkMovement && selectedFromRegion && !selectedToRegion && isAdjacentToSelected(region);
 
           const isClickable = isRemoveTarget || isMoveSource || isMoveTarget || isSelected || isPlaceUnitTarget || isRemoveFortressTarget || isLandmarkMoveSource || isLandmarkMoveTarget;
           const highlightColor = isSelected || selectedToRegion === region ? "#a855f7"
@@ -220,13 +225,13 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
       </svg>
 
       {/* Place unit phase confirmation */}
-      {isPlaceUnitPhase && pendingPhaseRegion && (
+      {activePlaceUnit && pendingPhaseRegion && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-blue-600 rounded-lg px-3 py-2 shadow-lg">
           <span className="text-xs text-white">
             Place unit in <strong>{REGION_LABELS[pendingPhaseRegion]}</strong>?
           </span>
           <button onClick={() => {
-            onResolvePlaceUnit!("RESOLVE", pendingPhaseRegion);
+            onResolvePlaceUnit("RESOLVE", pendingPhaseRegion);
             setPendingPhaseRegion(null);
           }}
             className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold">
@@ -240,13 +245,13 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
       )}
 
       {/* Remove fortress phase confirmation */}
-      {isRemoveFortressPhase && pendingPhaseRegion && (
+      {activeRemoveFortress && pendingPhaseRegion && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-orange-600 rounded-lg px-3 py-2 shadow-lg">
           <span className="text-xs text-white">
             Remove enemy fortress from <strong>{REGION_LABELS[pendingPhaseRegion]}</strong>?
           </span>
           <button onClick={() => {
-            onResolveRemoveFortress!("RESOLVE", pendingPhaseRegion);
+            onResolveRemoveFortress("RESOLVE", pendingPhaseRegion);
             setPendingPhaseRegion(null);
           }}
             className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-xs font-bold">
@@ -266,7 +271,7 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
             Remove enemy unit from <strong>{REGION_LABELS[pendingRemoveRegion]}</strong>?
           </span>
           <button onClick={() => {
-            onResolveManeuver!("REMOVE_ENEMY_UNIT", pendingRemoveRegion);
+            onResolveManeuver("REMOVE_ENEMY_UNIT", pendingRemoveRegion);
             setPendingRemoveRegion(null);
           }}
             className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-bold">
@@ -280,16 +285,16 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
       )}
 
       {/* Move unit confirmation (maneuver or landmark) */}
-      {selectedFromRegion && selectedToRegion && !isPlaceUnitPhase && !isRemoveFortressPhase && (
+      {selectedFromRegion && selectedToRegion && !activePlaceUnit && !activeRemoveFortress && (
         <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 shadow-lg">
           <span className="text-xs text-white">
             Move unit <strong>{REGION_LABELS[selectedFromRegion]}</strong> → <strong>{REGION_LABELS[selectedToRegion]}</strong>?
           </span>
           <button onClick={() => {
-            if (isLandmarkMovement && onResolveLandmark) {
+            if (activeLandmarkMovement) {
               onResolveLandmark("MOVEMENT", { fromRegion: selectedFromRegion, toRegion: selectedToRegion });
             } else {
-              onResolveManeuver!("MOVE_UNIT", undefined, selectedFromRegion, selectedToRegion);
+              onResolveManeuver("MOVE_UNIT", undefined, selectedFromRegion, selectedToRegion);
             }
             clearAll();
           }}
@@ -304,7 +309,7 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
       )}
 
       {/* Landmark movement skip button */}
-      {isLandmarkMovement && !selectedFromRegion && !selectedToRegion && onResolveLandmark && (
+      {activeLandmarkMovement && !selectedFromRegion && !selectedToRegion && (
         <div className="absolute top-2 right-2">
           <button onClick={() => onResolveLandmark("SKIP")}
             className="bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold border border-green-600">
@@ -314,7 +319,7 @@ export default function RegionMap({ regions, mySide, isManeuverPhase, pendingMan
       )}
 
       {/* Cancel move source selection */}
-      {selectedFromRegion && !selectedToRegion && !isPlaceUnitPhase && !isRemoveFortressPhase && (
+      {selectedFromRegion && !selectedToRegion && !activePlaceUnit && !activeRemoveFortress && (
         <div className="absolute top-2 right-2">
           <button onClick={clearAll}
             className="bg-gray-800 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs font-bold border border-gray-600">

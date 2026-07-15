@@ -1,25 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { LotrCardDef, LotrRegion, REGION_ADJACENCY } from "@/types/lotr";
+import { LotrRegion, REGION_ADJACENCY } from "@/types/lotr";
 import { getCardDef } from "@/lib/lotrCards";
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
-interface Props {
-  effectType: string;
-  effectSubPhase: string;
-  counter: number;
-  selectedRegions: string[];
-  discardPile: string[];
-  mySide: "FELLOWSHIP" | "SAURON" | undefined;
-  regions: { region: LotrRegion; fortress: string | null; units: number }[];
-  onResolve: (data: Record<string, unknown>) => void;
-  readOnly?: boolean;
-}
+export default function AllianceEffectPanel() {
+  const { state, isAllianceEffectPhase, mySide, resolveAllianceEffect } = useLotrGameContext();
+  const readOnly = !isAllianceEffectPhase;
 
-export default function AllianceEffectPanel({
-  effectType, effectSubPhase, counter, selectedRegions,
-  discardPile, mySide, regions, onResolve, readOnly,
-}: Props) {
   if (readOnly) {
     return (
       <div className="bg-teal-900/70 border border-teal-500 rounded-lg p-3">
@@ -28,25 +17,38 @@ export default function AllianceEffectPanel({
     );
   }
 
+  const effectType = state.allianceEffectType ?? "";
+  const effectSubPhase = state.allianceEffectSubPhase ?? "";
+  const counter = state.allianceEffectCounter ?? 0;
+  const selectedRegions = state.allianceEffectSelectedRegions ?? [];
+
   switch (effectType) {
     case "ENTS2_FORTRESS":
-      return <Ents2FortressPanel regions={regions} mySide={mySide} onResolve={onResolve} />;
+      return <Ents2FortressPanel />;
     case "ENTS3_CHOICE":
-      return <Ents3ChoicePanel counter={counter} effectSubPhase={effectSubPhase} regions={regions} mySide={mySide} onResolve={onResolve} />;
+      return <Ents3ChoicePanel counter={counter} effectSubPhase={effectSubPhase} />;
     case "WIZARDS2_UNITS":
-      return <Wizards2UnitsPanel selectedRegions={selectedRegions} regions={regions} mySide={mySide} onResolve={onResolve} />;
+      return <Wizards2UnitsPanel selectedRegions={selectedRegions} />;
     case "WIZARDS3_DISCARD":
-      return <Wizards3DiscardPanel discardPile={discardPile} onResolve={onResolve} />;
+      return <Wizards3DiscardPanel />;
     default:
       return null;
   }
 }
 
-function Ents2FortressPanel({ regions, mySide, onResolve }: {
-  regions: { region: LotrRegion; fortress: string | null; units: number }[];
-  mySide: "FELLOWSHIP" | "SAURON" | undefined;
-  onResolve: (data: Record<string, unknown>) => void;
-}) {
+type RegionState = { region: LotrRegion; fortress: string | null; units: number };
+
+/**
+ * Shared hook that pulls the region list, my side, and the resolve callback
+ * from context — the sub-panels below all need the same trio.
+ */
+function useAllianceEffectDeps() {
+  const { state, mySide, resolveAllianceEffect } = useLotrGameContext();
+  return { regions: state.regions as RegionState[], mySide, onResolve: resolveAllianceEffect };
+}
+
+function Ents2FortressPanel() {
+  const { regions, mySide, onResolve } = useAllianceEffectDeps();
   const enemyFortresses = regions.filter(r => r.fortress !== null && r.fortress !== mySide);
 
   return (
@@ -67,13 +69,12 @@ function Ents2FortressPanel({ regions, mySide, onResolve }: {
   );
 }
 
-function Ents3ChoicePanel({ counter, effectSubPhase, regions, mySide, onResolve }: {
+function Ents3ChoicePanel({ counter, effectSubPhase }: {
   counter: number;
   effectSubPhase: string;
-  regions: { region: LotrRegion; fortress: string | null; units: number }[];
-  mySide: "FELLOWSHIP" | "SAURON" | undefined;
-  onResolve: (data: Record<string, unknown>) => void;
 }) {
+  const { regions, mySide, onResolve } = useAllianceEffectDeps();
+
   // Local sub-phase for REMOVE_UNIT and MOVE_UNIT — these need region selection before sending to backend
   // STEAL_COIN goes directly to backend since it's automatic
   const [localSubPhase, setLocalSubPhase] = useState<string>("CHOOSE_ACTION");
@@ -120,7 +121,7 @@ function Ents3ChoicePanel({ counter, effectSubPhase, regions, mySide, onResolve 
     return (
       <div className="bg-orange-900/70 border border-orange-500 rounded-lg p-4">
         <div className="text-sm font-bold text-orange-200 mb-2">Complete 1 Movement — Choices left: {counter}</div>
-        <MoveUnitSelector regions={regions} ownUnitRegions={ownUnitRegions} mySide={mySide} onResolve={onResolve} />
+        <MoveUnitSelector regions={regions} ownUnitRegions={ownUnitRegions} onResolve={onResolve} />
         <div className="flex gap-2 mt-2">
           <button onClick={() => setLocalSubPhase("CHOOSE_ACTION")}
             className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-sm">Back</button>
@@ -156,10 +157,9 @@ function Ents3ChoicePanel({ counter, effectSubPhase, regions, mySide, onResolve 
   );
 }
 
-function MoveUnitSelector({ regions, ownUnitRegions, mySide, onResolve }: {
-  regions: { region: LotrRegion; fortress: string | null; units: number }[];
-  ownUnitRegions: { region: LotrRegion; fortress: string | null; units: number }[];
-  mySide: "FELLOWSHIP" | "SAURON" | undefined;
+function MoveUnitSelector({ regions, ownUnitRegions, onResolve }: {
+  regions: RegionState[];
+  ownUnitRegions: RegionState[];
   onResolve: (data: Record<string, unknown>) => void;
 }) {
   return (
@@ -187,12 +187,10 @@ function MoveUnitSelector({ regions, ownUnitRegions, mySide, onResolve }: {
   );
 }
 
-function Wizards2UnitsPanel({ selectedRegions, regions: _regions, mySide: _mySide, onResolve }: {
+function Wizards2UnitsPanel({ selectedRegions }: {
   selectedRegions: string[];
-  regions: { region: LotrRegion; fortress: string | null; units: number }[];
-  mySide: "FELLOWSHIP" | "SAURON" | undefined;
-  onResolve: (data: Record<string, unknown>) => void;
 }) {
+  const { onResolve } = useAllianceEffectDeps();
   const allRegions: LotrRegion[] = ["LINDON", "ARNOR", "RHOVANION", "ENEDWAITH", "ROHAN", "GONDOR", "MORDOR"];
   const unitLabel = selectedRegions.length === 1 ? "2 units" : selectedRegions.length === 2 ? "1 unit each" : "none";
 
@@ -233,17 +231,17 @@ function Wizards2UnitsPanel({ selectedRegions, regions: _regions, mySide: _mySid
   );
 }
 
-function Wizards3DiscardPanel({ discardPile, onResolve }: {
-  discardPile: string[];
-  onResolve: (data: Record<string, unknown>) => void;
-}) {
+function Wizards3DiscardPanel() {
+  const { state, resolveAllianceEffect: onResolve } = useLotrGameContext();
+  const discardPile = state.discardPile ?? [];
+
   return (
     <div className="bg-violet-900/70 border border-violet-500 rounded-lg p-4">
       <div className="text-sm font-bold text-violet-200 mb-2">Wizard&apos;s Insight — Pick a Discard Card</div>
       <div className="text-xs text-violet-300 mb-3">Choose a card from the discard pile to play for free:</div>
       <div className="flex flex-wrap gap-2">
         {discardPile.map(cardId => {
-          const def: LotrCardDef | undefined = getCardDef(cardId);
+          const def = getCardDef(cardId);
           if (!def) return null;
           return (
             <button key={cardId} onClick={() => onResolve({ action: "PICK", cardDefId: cardId })}

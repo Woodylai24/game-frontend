@@ -400,7 +400,8 @@ function CreateRoomModal({
   onRoomCreated: (roomCode: string) => void;
 }) {
   const [roomName, setRoomName] = useState("");
-  const [gameType, setGameType] = useState("TicTacToe");
+  // LOTR is the production default; TTT is dev-only.
+  const [gameType, setGameType] = useState("LOTR");
   const [maxPlayers, setMaxPlayers] = useState(2);
   const [isPrivate, setIsPrivate] = useState(false);
   const [password, setPassword] = useState("");
@@ -474,7 +475,10 @@ function CreateRoomModal({
               onChange={(e) => handleGameTypeChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="TicTacToe">Tic Tac Toe</option>
+              {/* Tic-Tac-Toe is dev-only — hidden from production builds. */}
+              {process.env.NODE_ENV !== "production" && (
+                <option value="TicTacToe">Tic Tac Toe</option>
+              )}
               <option value="LOTR">The Lord of the Rings: Duel for Middle-earth</option>
             </select>
           </div>

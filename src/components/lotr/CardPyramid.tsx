@@ -4,20 +4,17 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LotrCardSlot, LotrCardDef, LotrSkill, LotrRegion, getCardImagePath, getCardBackPath, getSkillIconPath } from "@/types/lotr";
 import { getCardDef, getCardEffectText, resolveSkillsWithOptions } from "@/lib/lotrCards";
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
 const ALL_REGIONS: LotrRegion[] = ["LINDON", "ARNOR", "RHOVANION", "ENEDWAITH", "ROHAN", "GONDOR", "MORDOR"];
 
-interface Props {
-  cardSlots: LotrCardSlot[];
-  currentChapter: number;
-  isMyTurn: boolean;
-  onTakeCard: (slotId: number, playOrDiscard: "PLAY" | "DISCARD", chosenRegion?: string) => void;
-  myPlayedCards: string[];
-  myCoins: number;
-  myAllianceTokenIds?: string[];
-}
+export default function CardPyramid() {
+  const { state, inInteractivePhase, isMyTurn, takeCard, myPlayedCards, myCoins, me } = useLotrGameContext();
+  const cardSlots = state.cardSlots;
+  const currentChapter = state.currentChapter;
+  const myAllianceTokenIds = me?.allianceTokenIds;
+  const interactiveTurn = !inInteractivePhase && isMyTurn;
 
-export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTakeCard, myPlayedCards, myCoins, myAllianceTokenIds }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<LotrCardSlot | null>(null);
 
   const rows = getRows(cardSlots, currentChapter);
@@ -59,12 +56,12 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
                 return (
                   <button
                     key={slot.id}
-                    onClick={() => isAvailable && isMyTurn && setSelectedSlot(slot)}
-                    disabled={!isAvailable || !isMyTurn}
+                    onClick={() => isAvailable && interactiveTurn && setSelectedSlot(slot)}
+                    disabled={!isAvailable || !interactiveTurn}
                     className={`w-[80px] h-[120px] rounded border-2 text-[8px] transition-all overflow-hidden relative
                       ${!slot.cardDefId ? "border-gray-700 bg-gray-700/30 opacity-30" :
                         !slot.faceUp ? "border-gray-600 bg-gray-700" :
-                        isAvailable && isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
+                        isAvailable && interactiveTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
                         "border-gray-500 opacity-60"}
                     `}
                   >
@@ -105,12 +102,12 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
               return (
                 <button
                   key={slot.id}
-                  onClick={() => isAvailable && isMyTurn && setSelectedSlot(slot)}
-                  disabled={!isAvailable || !isMyTurn}
+                  onClick={() => isAvailable && interactiveTurn && setSelectedSlot(slot)}
+                  disabled={!isAvailable || !interactiveTurn}
                   className={`w-[90px] h-[135px] rounded border-2 text-[10px] transition-all overflow-hidden relative
                     ${!slot.cardDefId ? "border-gray-700 bg-gray-700/30 opacity-30" :
                       !slot.faceUp ? "border-gray-600 bg-gray-700" :
-                      isAvailable && isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
+                      isAvailable && interactiveTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
                       "border-gray-500 opacity-60"}
                   `}
                 >
@@ -141,11 +138,9 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
           card={availableCard}
           canChain={!!canChain}
           canAfford={canAfford(availableCard)}
-          myPlayedCards={myPlayedCards}
-          myAllianceTokenIds={myAllianceTokenIds}
           onClose={() => setSelectedSlot(null)}
           onConfirm={(playOrDiscard, region) => {
-            onTakeCard(selectedSlot.id, playOrDiscard, region);
+            takeCard(selectedSlot.id, playOrDiscard, region);
             setSelectedSlot(null);
           }}
         />
@@ -154,12 +149,12 @@ export default function CardPyramid({ cardSlots, currentChapter, isMyTurn, onTak
   );
 }
 
-function CardActionModal({ card, canChain, canAfford, myPlayedCards, myAllianceTokenIds, onClose, onConfirm }: {
+function CardActionModal({ card, canChain, canAfford, onClose, onConfirm }: {
   card: LotrCardDef; canChain: boolean; canAfford: boolean;
-  myPlayedCards: string[];
-  myAllianceTokenIds?: string[];
   onClose: () => void; onConfirm: (playOrDiscard: "PLAY" | "DISCARD", region?: string) => void;
 }) {
+  const { myPlayedCards, me } = useLotrGameContext();
+  const myAllianceTokenIds = me?.allianceTokenIds;
   const [chosenRegion, setChosenRegion] = useState<string | undefined>(undefined);
 
   const hasElves2 = myAllianceTokenIds?.includes("AT-ELVES-2") ?? false;

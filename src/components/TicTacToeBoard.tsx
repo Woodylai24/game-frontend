@@ -1,28 +1,19 @@
 "use client";
 
-import { Board, PlayerSymbolInfo } from "@/types/game";
+import { useTicTacToeGameContext } from "@/context/TicTacToeGameContext";
+import { Board } from "@/types/tictactoe";
 
-interface TicTacToeBoardProps {
-  board: Board;
-  currentPlayerOrder: number;
-  players: PlayerSymbolInfo[];
-  username: string;
-  gameStatus: string;
-  winnerUsername: string | null;
-  isDraw: boolean;
-  onCellClick: (row: number, col: number) => void;
-}
+/**
+ * Tic-Tac-Toe board component. Reads all state from
+ * {@link useTicTacToeGameContext} — no props. The win-detection logic
+ * (getWinningCells) runs client-side by scanning the board, same as before.
+ */
+export default function TicTacToeBoard() {
+  const { ttState, players, currentPlayerOrder, username, session, makeMove } = useTicTacToeGameContext();
+  const board: Board = ttState.board;
+  const gameStatus = session.gameStatus;
+  const winnerUsername = session.winnerUsername;
 
-export default function TicTacToeBoard({
-  board,
-  currentPlayerOrder,
-  players,
-  username,
-  gameStatus,
-  winnerUsername,
-  isDraw,
-  onCellClick,
-}: TicTacToeBoardProps) {
   const currentPlayer = players.find(
     (p) => (p.symbol === "X" ? 0 : 1) === currentPlayerOrder,
   );
@@ -32,7 +23,7 @@ export default function TicTacToeBoard({
 
   const getWinningCells = (): Set<string> => {
     const cells = new Set<string>();
-    if (!isFinished || isDraw) return cells;
+    if (!isFinished || winnerUsername === null) return cells;
 
     for (let r = 0; r < 3; r++) {
       if (
@@ -88,7 +79,7 @@ export default function TicTacToeBoard({
       <div className="mb-4 text-center">
         {isFinished ? (
           <div className="text-lg font-bold">
-            {isDraw ? (
+            {winnerUsername === null ? (
               <span className="text-yellow-600">It&apos;s a draw!</span>
             ) : winnerUsername === username ? (
               <span className="text-green-600">You win!</span>
@@ -140,7 +131,7 @@ export default function TicTacToeBoard({
             return (
               <button
                 key={`${rowIndex}-${colIndex}`}
-                onClick={() => canClick && onCellClick(rowIndex, colIndex)}
+                onClick={() => canClick && makeMove(rowIndex, colIndex)}
                 disabled={!canClick}
                 className={`w-24 h-24 border-2 rounded-lg text-4xl font-bold flex items-center justify-center transition-all
                   ${

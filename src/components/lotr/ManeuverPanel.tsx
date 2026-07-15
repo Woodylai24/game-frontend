@@ -1,11 +1,6 @@
 "use client";
 
-import { LotrManeuverType } from "@/types/lotr";
-
-interface Props {
-  pendingManeuvers: LotrManeuverType[];
-  onSkip: () => void;
-}
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
 const MANEUVER_LABELS: Record<string, string> = {
   REMOVE_ENEMY_UNIT: "Remove Enemy",
@@ -13,7 +8,10 @@ const MANEUVER_LABELS: Record<string, string> = {
   STEAL_COIN: "Steal Coin",
 };
 
-export default function ManeuverPanel({ pendingManeuvers, onSkip }: Props) {
+export default function ManeuverPanel() {
+  const { state, resolveManeuver } = useLotrGameContext();
+  const pendingManeuvers = state.pendingManeuvers ?? [];
+
   if (pendingManeuvers.length === 0) return null;
 
   const counts: Record<string, number> = {};
@@ -31,7 +29,7 @@ export default function ManeuverPanel({ pendingManeuvers, onSkip }: Props) {
         <div className="text-sm font-bold text-purple-200">Maneuver Phase</div>
         <div className="text-xs text-purple-300">Resolve: {summary}</div>
       </div>
-      <button onClick={onSkip}
+      <button onClick={() => resolveManeuver("SKIP")}
         className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-sm font-bold whitespace-nowrap">
         Skip All
       </button>

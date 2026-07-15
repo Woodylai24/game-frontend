@@ -1,20 +1,13 @@
 "use client";
 
 import { LotrPlayerSide } from "@/types/lotr";
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
-interface Props {
-  currentChapter: number;
-  currentTurnPlayer: LotrPlayerSide;
-  isMyTurn: boolean;
-  isFinished: boolean;
-  isDraw: boolean;
-  winnerSide?: LotrPlayerSide;
-  mySide?: string;
-  players?: { username: string; side: string }[];
-  onBackToRoom?: () => void;
-}
+export default function InfoBar() {
+  const { state, isMyTurn, isFinished, isDraw, winnerSide, mySide, players, onBackToRoom } = useLotrGameContext();
+  const currentChapter = state.currentChapter;
+  const currentTurnPlayer = state.currentTurnPlayer;
 
-export default function InfoBar({ currentChapter, currentTurnPlayer, isMyTurn, isFinished, isDraw, winnerSide, mySide, players, onBackToRoom }: Props) {
   const chapterLabel = currentChapter > 3 ? "Game Finished" : `Chapter ${["I", "II", "III"][currentChapter - 1] || "?"}`;
   const playerName = (side: LotrPlayerSide) =>
     players?.find(p => p.side === side)?.username ?? (side === "FELLOWSHIP" ? "Fellowship" : "Sauron");

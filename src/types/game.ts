@@ -73,43 +73,36 @@ export interface GameEvent {
   timestamp: number;
 }
 
-export type Board = (string | null)[][];
-
-export interface PlayerSymbolInfo {
-  username: string;
-  symbol: "X" | "O";
-}
-
+/**
+ * Generic game-session data — shared by all games.
+ *
+ * Per-game state lives in {@code gameState} as an opaque JSON string; each
+ * game's frontend parses it according to its own type (e.g. TicTacToeState
+ * for TTT). Previously this carried TTT-specific fields (board,
+ * currentPlayerOrder, currentTurn, PlayerSymbolInfo) that leaked TTT
+ * assumptions into every game's session shape.
+ */
 export interface GameSessionData {
   id: number;
   roomId: number;
   roomCode: string;
-  board: Board;
-  currentPlayerOrder: number;
-  currentTurn: number;
   gameStatus: "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "FINISHED" | "CANCELLED";
+  gameState: string;
   winnerUsername: string | null;
-  players: PlayerSymbolInfo[];
 }
 
 export interface GameStartedEvent {
   event: "game_started";
   gameSession: GameSessionData;
-  board: Board;
-  currentPlayerOrder: number;
 }
 
 export interface MoveEvent {
   event: "move";
-  board: Board;
-  currentPlayerOrder: number;
-  gameStatus: string;
-  currentTurn: number;
+  gameSession: GameSessionData;
 }
 
 export interface GameEndedEvent {
   event: "game_ended";
-  board: Board;
   gameStatus: string;
   winnerUsername: string | null;
   isDraw: boolean;

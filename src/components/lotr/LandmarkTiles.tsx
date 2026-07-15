@@ -4,18 +4,14 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LotrLandmarkTileDef, LotrSkill, getLandmarkImagePath, getLandmarkBackPath, getSkillIconPath } from "@/types/lotr";
 import { resolveSkillsWithOptions } from "@/lib/lotrCards";
+import { useLotrGameContext } from "@/context/LotrGameContext";
 
-interface Props {
-  landmarks: LotrLandmarkTileDef[];
-  isMyTurn: boolean;
-  myCoins: number;
-  myPlayedCards: string[];
-  fortressCount: number;
-  onTakeLandmark: (tileId: string) => void;
-  myAllianceTokenIds?: string[];
-}
+export default function LandmarkTiles() {
+  const { state, inInteractivePhase, isMyTurn, takeLandmark, myPlayedCards, myCoins, fortressCount, me } = useLotrGameContext();
+  const landmarks = state.landmarkTiles;
+  const myAllianceTokenIds = me?.allianceTokenIds;
+  const interactiveTurn = !inInteractivePhase && isMyTurn;
 
-export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCards, fortressCount, onTakeLandmark, myAllianceTokenIds }: Props) {
   const [selectedTile, setSelectedTile] = useState<LotrLandmarkTileDef | null>(null);
 
   const faceUpTiles = landmarks.filter(t => t.faceUp);
@@ -44,13 +40,13 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCa
               layout
               exit={{ opacity: 0, scale: 0.7 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              onClick={() => isMyTurn && setSelectedTile(tile)}
-              disabled={!isMyTurn}
+              onClick={() => interactiveTurn && setSelectedTile(tile)}
+              disabled={!interactiveTurn}
               className="relative"
             >
               <img src={getLandmarkImagePath(tile.id)} alt={tile.name}
                 className={`w-32 h-32 sm:w-40 sm:h-40 rounded border-2 object-contain
-                  ${isMyTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer" : "border-gray-600"}`} />
+                  ${interactiveTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer" : "border-gray-600"}`} />
             </motion.button>
           ))}
         </AnimatePresence>
@@ -70,15 +66,11 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCa
       {selectedTile && (
         <LandmarkModal
           tile={selectedTile}
-          myPlayedCards={myPlayedCards}
-          myAllianceTokenIds={myAllianceTokenIds}
-          fortressCount={fortressCount}
-          hasDwarves1={hasDwarves1}
           canAfford={canAfford(selectedTile)}
           coinCost={getCoinCost(selectedTile)}
           onClose={() => setSelectedTile(null)}
           onTake={() => {
-            onTakeLandmark(selectedTile.id);
+            takeLandmark(selectedTile.id);
             setSelectedTile(null);
           }}
         />
@@ -87,17 +79,17 @@ export default function LandmarkTiles({ landmarks, isMyTurn, myCoins, myPlayedCa
   );
 }
 
-function LandmarkModal({ tile, myPlayedCards, myAllianceTokenIds, fortressCount, hasDwarves1, canAfford, coinCost, onClose, onTake }: {
+function LandmarkModal({ tile, canAfford, coinCost, onClose, onTake }: {
   tile: LotrLandmarkTileDef;
-  myPlayedCards: string[];
-  myAllianceTokenIds?: string[];
-  fortressCount: number;
-  hasDwarves1: boolean;
   canAfford: boolean;
   coinCost: number;
   onClose: () => void;
   onTake: () => void;
 }) {
+  const { myPlayedCards, me, fortressCount } = useLotrGameContext();
+  const myAllianceTokenIds = me?.allianceTokenIds;
+  const hasDwarves1 = myAllianceTokenIds?.includes("AT-DWARVES-1") ?? false;
+
   const resolved = resolveSkillsWithOptions(myPlayedCards, tile.skillCost as LotrSkill[], myAllianceTokenIds);
 
   const extraCoinCost = hasDwarves1 ? 0 : fortressCount;
