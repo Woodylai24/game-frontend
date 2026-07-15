@@ -126,7 +126,6 @@ export interface LotrStateResponse {
   sessionId: number;
   roomId: number;
   gameStatus: string;
-  gameState: string;
   parsedState: LotrGameState | null;
   players: { username: string; playerOrder: number; side: string }[];
 }
