@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { GameSessionData } from "@/types/game";
 import { useAuth } from "@/context/AuthContext";
 import { useConnectionStatus } from "@/context/ConnectionContext";
@@ -11,9 +11,13 @@ import LotrGameView from "@/components/lotr/LotrGameView";
 import TicTacToeGameView from "@/components/TicTacToeGameView";
 
 export default function GamePageClient() {
-  const params = useParams();
   const router = useRouter();
-  const sessionId = Number(params.sessionId);
+  // Static export caveat: useParams() returns the placeholder value ("_")
+  // baked into the prerendered HTML, not the real URL segment (a known,
+  // long-standing Next.js limitation with output: 'export'). Read the path
+  // directly and parse it instead. Path looks like "/game/<id>/".
+  const pathname = usePathname();
+  const sessionId = Number(pathname.split("/")[2]);
   const { user, loading, isAuthenticated } = useAuth();
   const { reconnectCount } = useConnectionStatus();
 

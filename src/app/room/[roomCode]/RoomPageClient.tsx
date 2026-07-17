@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   GameRoom,
   ChatMessage,
@@ -14,9 +14,13 @@ import { apiFetch } from "@/services/api";
 import { loadChatMessages, saveChatMessage } from "@/lib/chatStorage";
 
 export default function RoomPageClient() {
-  const params = useParams();
   const router = useRouter();
-  const roomCode = params.roomCode as string;
+  // Static export caveat: useParams() returns the placeholder value ("_")
+  // baked into the prerendered HTML, not the real URL segment (a known,
+  // long-standing Next.js limitation with output: 'export'). Read the path
+  // directly and parse it instead. Path looks like "/room/<code>/".
+  const pathname = usePathname();
+  const roomCode = decodeURIComponent(pathname.split("/")[2] || "");
   const { user, loading, isAuthenticated, isGuest } = useAuth();
   const { reconnectCount } = useConnectionStatus();
 
