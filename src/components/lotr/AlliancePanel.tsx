@@ -27,7 +27,7 @@ export default function AlliancePanel() {
     const tokenRace = parts[1] || "";
     const num = parts[2] || "";
     const raceLabel = tokenRace.charAt(0) + tokenRace.slice(1).toLowerCase();
-    return `/lotr/alliances/${raceLabel}_${num}.png`;
+    return `/lotr/Alliances/${raceLabel}_${num}.png`;
   };
 
   return (
