@@ -141,7 +141,7 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props
               const race = parts[1] || "";
               const num = parts[2] || "";
               const raceLabel = race.charAt(0) + race.slice(1).toLowerCase();
-              const imgPath = `/lotr/alliances/${raceLabel}_${num}.png`;
+              const imgPath = `/lotr/Alliances/${raceLabel}_${num}.png`;
               const tooltip = def ? def.effect : id;
               return (
                 <img key={id} src={imgPath} alt={def?.name ?? id}
