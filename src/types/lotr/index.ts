@@ -194,22 +194,22 @@ const CARD_IMAGE_MAP: Record<string, string> = {
 
 export function getCardImagePath(cardDefId: string, chapter: number): string {
   const mapped = CARD_IMAGE_MAP[cardDefId];
-  if (mapped) return `/lotr/Cards/Chapter_${chapter}/${mapped}.png`;
+  if (mapped) return `/lotr/Cards/Chapter_${chapter}/${mapped}.webp`;
   const num = parseInt(cardDefId.split("-")[1]);
-  return `/lotr/Cards/Chapter_${chapter}/${num}.png`;
+  return `/lotr/Cards/Chapter_${chapter}/${num}.webp`;
 }
 
 export function getCardBackPath(chapter: number): string {
-  return `/lotr/Cards/Chapter_${chapter}/back.png`;
+  return `/lotr/Cards/Chapter_${chapter}/back.webp`;
 }
 
 export function getLandmarkImagePath(tileId: string): string {
   const num = tileId.replace("LM-0", "");
-  return `/lotr/Landmarks/${num}.png`;
+  return `/lotr/Landmarks/${num}.webp`;
 }
 
 export function getSkillIconPath(skill: LotrSkill): string {
-  return `/lotr/Icons/Skills/${skill.charAt(0) + skill.slice(1).toLowerCase()}.png`;
+  return `/lotr/Icons/Skills/${skill.charAt(0) + skill.slice(1).toLowerCase()}.webp`;
 }
 
 export function getRaceIconPath(race: LotrRace): string {
@@ -217,17 +217,17 @@ export function getRaceIconPath(race: LotrRace): string {
     ELVES: "Elves", ENTS: "Ents", HOBBITS: "Hobbits",
     HUMANS: "Humans", DWARVES: "Dwarves", WIZARDS: "Wizards"
   };
-  return `/lotr/Icons/Races/${map[race]}.png`;
+  return `/lotr/Icons/Races/${map[race]}.webp`;
 }
 
 export function getRegionIconPath(region: LotrRegion): string {
-  return `/lotr/Icons/Regions/${region.charAt(0) + region.slice(1).toLowerCase()}.png`;
+  return `/lotr/Icons/Regions/${region.charAt(0) + region.slice(1).toLowerCase()}.webp`;
 }
 
 export function getLandmarkBackPath(): string {
-  return `/lotr/Landmarks/back.png`;
+  return `/lotr/Landmarks/back.webp`;
 }
 
 export function getBonusIconPath(position: number): string {
-  return `/lotr/QuestTrack/${position}.png`;
+  return `/lotr/QuestTrack/${position}.webp`;
 }
