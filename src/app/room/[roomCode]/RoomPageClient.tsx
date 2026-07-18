@@ -359,7 +359,10 @@ export default function RoomPageClient() {
   const allPlayersReady =
     room.players.length >= 2 && room.players.every((p) => p.isReady);
   const isGameFinished = room.gameFinished === true;
-  const isGameActive = room.status === "IN_PROGRESS" || isGameFinished;
+  // Leave should be blocked only while a game is IN_PROGRESS. After the game
+  // finishes, the room returns to WAITING and players should be able to leave
+  // (the Leave button was wrongly disabled because gameFinished was folded in).
+  const isGameActive = room.status === "IN_PROGRESS";
 
   return (
     <div className="min-h-screen bg-gray-50">
