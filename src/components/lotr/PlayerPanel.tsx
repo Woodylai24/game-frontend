@@ -141,7 +141,7 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props
               const race = parts[1] || "";
               const num = parts[2] || "";
               const raceLabel = race.charAt(0) + race.slice(1).toLowerCase();
-              const imgPath = `/lotr/Alliances/${raceLabel}_${num}.png`;
+              const imgPath = `/lotr/Alliances/${raceLabel}_${num}.webp`;
               const tooltip = def ? def.effect : id;
               return (
                 <img key={id} src={imgPath} alt={def?.name ?? id}
@@ -164,7 +164,7 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props
           ))}
           {player.allianceTokenIds.includes("AT-HOBBITS-1") && (
             <div className="flex items-center gap-0.5" title="Eagle (Hobbits 1)">
-              <img src="/lotr/Icons/Races/Eagle.png" alt="Eagle" className="w-5 h-5 rounded" title="Eagle" />
+              <img src="/lotr/Icons/Races/Eagle.webp" alt="Eagle" className="w-5 h-5 rounded" title="Eagle" />
             </div>
           )}
         </div>
@@ -222,7 +222,7 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props
               {[...chainSymbols].map(sym => {
                 const used = usedChainCosts.has(sym);
                 return (
-                  <img key={sym} src={`/lotr/Chains/${sym.toLowerCase()}.png`} alt={sym}
+                  <img key={sym} src={`/lotr/Chains/${sym.toLowerCase()}.webp`} alt={sym}
                     className={`w-6 h-8 rounded${used ? " opacity-40 grayscale" : ""}`}
                     title={`${sym}${used ? " (used)" : ""}`} />
                 );

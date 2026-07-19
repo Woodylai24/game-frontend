@@ -3,9 +3,9 @@
 import { useState } from "react";
 
 const PAGES = [
-  "/lotr/player-aid/page-1.png",
-  "/lotr/player-aid/page-2.png",
-  "/lotr/player-aid/page-3.png",
+  "/lotr/player-aid/page-1.webp",
+  "/lotr/player-aid/page-2.webp",
+  "/lotr/player-aid/page-3.webp",
 ];
 
 interface Props {
