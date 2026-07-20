@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import {
   GameRoom,
   ChatMessage,
@@ -369,11 +371,23 @@ export default function RoomPageClient() {
       <header className="bg-gray-900 border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-xl font-semibold">{room.roomName}</h1>
-              <p className="text-sm text-gray-400">
-                Room Code: {room.roomCode}
-              </p>
+            <div className="flex items-center space-x-3">
+              <Link href="/" className="flex items-center shrink-0" title="Board Game Zone">
+                <Image
+                  src="/bgz.png"
+                  alt="Board Game Zone"
+                  width={32}
+                  height={32}
+                  className="h-8 w-auto"
+                  priority
+                />
+              </Link>
+              <div>
+                <h1 className="text-xl font-semibold">{room.roomName}</h1>
+                <p className="text-sm text-gray-400">
+                  Room Code: {room.roomCode}
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-400">
