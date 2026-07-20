@@ -80,17 +80,17 @@ export default function TicTacToeBoard() {
         {isFinished ? (
           <div className="text-lg font-bold">
             {winnerUsername === null ? (
-              <span className="text-yellow-600">It&apos;s a draw!</span>
+              <span className="text-yellow-400">It&apos;s a draw!</span>
             ) : winnerUsername === username ? (
-              <span className="text-green-600">You win!</span>
+              <span className="text-green-400">You win!</span>
             ) : (
-              <span className="text-red-600">{winnerUsername} wins!</span>
+              <span className="text-red-400">{winnerUsername} wins!</span>
             )}
           </div>
         ) : isMyTurn ? (
-          <div className="text-lg font-semibold text-blue-600">Your turn</div>
+          <div className="text-lg font-semibold text-blue-400">Your turn</div>
         ) : (
-          <div className="text-lg font-semibold text-gray-500">
+          <div className="text-lg font-semibold text-gray-400">
             Waiting for {currentPlayer?.username}...
           </div>
         )}
@@ -101,14 +101,14 @@ export default function TicTacToeBoard() {
           const isActive =
             !isFinished && (p.symbol === "X" ? 0 : 1) === currentPlayerOrder;
           const symbolColor =
-            p.symbol === "X" ? "text-blue-600" : "text-red-600";
+            p.symbol === "X" ? "text-blue-400" : "text-red-400";
           return (
             <div
               key={p.username}
               className={`px-4 py-2 rounded-lg ${
                 isActive
-                  ? "bg-gray-100 ring-2 ring-blue-400"
-                  : "bg-gray-50"
+                  ? "bg-gray-800 ring-2 ring-blue-400"
+                  : "bg-gray-900"
               }`}
             >
               <span className={`font-bold text-xl ${symbolColor}`}>
@@ -136,14 +136,14 @@ export default function TicTacToeBoard() {
                 className={`w-24 h-24 border-2 rounded-lg text-4xl font-bold flex items-center justify-center transition-all
                   ${
                     isWinning
-                      ? "bg-yellow-100 border-yellow-400"
+                      ? "bg-yellow-900/40 border-yellow-400"
                       : cell
-                        ? "bg-gray-50 border-gray-300"
+                        ? "bg-gray-800 border-gray-700"
                         : canClick
-                          ? "bg-white border-gray-300 hover:bg-blue-50 hover:border-blue-300 cursor-pointer"
-                          : "bg-white border-gray-200 cursor-not-allowed"
+                          ? "bg-gray-900 border-gray-700 hover:bg-blue-900/40 hover:border-blue-500 cursor-pointer"
+                          : "bg-gray-900 border-gray-800 cursor-not-allowed"
                   }
-                  ${cell === "X" ? "text-blue-600" : "text-red-600"}
+                  ${cell === "X" ? "text-blue-400" : "text-red-400"}
                 `}
               >
                 {cell}

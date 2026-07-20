@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Game Stack",
+  title: "Board Game Zone",
   description: "Online multiplayer game platform",
 };
 
