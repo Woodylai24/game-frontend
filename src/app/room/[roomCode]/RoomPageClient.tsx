@@ -280,7 +280,7 @@ export default function RoomPageClient() {
 
   if (loading || !isAuthenticated || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -288,12 +288,12 @@ export default function RoomPageClient() {
 
   if (showPasswordPrompt) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <div className="bg-gray-900 p-8 rounded-lg border border-gray-800 w-full max-w-md">
           <h1 className="text-2xl font-bold text-center mb-6">
             Private Room
           </h1>
-          <p className="text-gray-600 text-center mb-4">
+          <p className="text-gray-400 text-center mb-4">
             This room requires a password to join.
           </p>
           <div className="space-y-4">
@@ -302,20 +302,20 @@ export default function RoomPageClient() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter room password"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               onKeyPress={(e) => e.key === "Enter" && handlePasswordSubmit()}
             />
             <div className="flex space-x-2">
               <button
                 onClick={() => router.push("/")}
-                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                className="flex-1 bg-gray-700 text-white py-2 px-4 rounded-md hover:bg-gray-600"
               >
                 Cancel
               </button>
               <button
                 onClick={handlePasswordSubmit}
                 disabled={!password.trim()}
-                className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-gray-300"
+                className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-gray-700"
               >
                 Join
               </button>
@@ -328,10 +328,10 @@ export default function RoomPageClient() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Error</h1>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <div className="bg-gray-900 p-8 rounded-lg border border-gray-800 w-full max-w-md text-center">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">Error</h1>
+          <p className="text-gray-400 mb-4">{error}</p>
           <button
             onClick={() => router.push("/")}
             className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
@@ -345,10 +345,10 @@ export default function RoomPageClient() {
 
   if (!room) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading room...</p>
+          <p className="text-gray-400">Loading room...</p>
         </div>
       </div>
     );
@@ -365,22 +365,22 @@ export default function RoomPageClient() {
   const isGameActive = room.status === "IN_PROGRESS";
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gray-950">
+      <header className="bg-gray-900 border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div>
               <h1 className="text-xl font-semibold">{room.roomName}</h1>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-400">
                 Room Code: {room.roomCode}
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-400">
                 Playing as: {username}
               </span>
               {isGuest && (
-                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-amber-900/30 text-amber-300 px-2 py-0.5 rounded-full">
                   Guest
                 </span>
               )}
@@ -390,7 +390,7 @@ export default function RoomPageClient() {
                 className={`text-sm ${
                   isGameActive
                     ? "text-gray-400 cursor-not-allowed"
-                    : "text-red-600 hover:text-red-800"
+                    : "text-red-400 hover:text-red-300"
                 }`}
               >
                 Leave Room
@@ -403,16 +403,16 @@ export default function RoomPageClient() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-lg font-medium">Game: {room.gameType}</h2>
                 <span
                   className={`px-3 py-1 text-sm rounded-full ${
                     room.status === "WAITING"
-                      ? "bg-yellow-100 text-yellow-800"
+                      ? "bg-yellow-900/30 text-yellow-300"
                       : room.status === "IN_PROGRESS"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                        ? "bg-green-900/30 text-green-300"
+                        : "bg-gray-800 text-gray-300"
                   }`}
                 >
                   {room.status === "WAITING"
@@ -428,8 +428,8 @@ export default function RoomPageClient() {
               {room.status === "WAITING" ? (
                 <>
                 {isGameFinished && room.activeGameSessionId && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-center">
-                    <h3 className="text-lg font-medium text-blue-800 mb-2">Game Finished!</h3>
+                  <div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-6 text-center">
+                    <h3 className="text-lg font-medium text-blue-300 mb-2">Game Finished!</h3>
                     <button
                       onClick={() => router.push(`/game/${room.activeGameSessionId}`)}
                       className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 font-medium"
@@ -440,10 +440,10 @@ export default function RoomPageClient() {
                 )}
                 <div className="text-center py-12">
                   <div className="mb-4">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <h3 className="text-lg font-medium text-gray-100 mb-2">
                       Waiting for players...
                     </h3>
-                    <p className="text-gray-600">
+                    <p className="text-gray-400">
                       {room.players.length} of {room.maxPlayers} players joined
                     </p>
                   </div>
@@ -474,7 +474,7 @@ export default function RoomPageClient() {
                     )}
 
                     {isHost && !allPlayersReady && (
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-400">
                         All players must be ready before you can start the game
                       </p>
                     )}
@@ -484,10 +484,10 @@ export default function RoomPageClient() {
               ) : room.status === "IN_PROGRESS" ? (
                 <div className="text-center py-12">
                   <div className="mb-4">
-                    <h3 className="text-lg font-medium text-green-700 mb-2">
+                    <h3 className="text-lg font-medium text-green-400 mb-2">
                       Game in Progress
                     </h3>
-                    <p className="text-gray-600">
+                    <p className="text-gray-400">
                       The game has started! Click below to enter the game.
                     </p>
                   </div>
@@ -507,7 +507,7 @@ export default function RoomPageClient() {
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
               <h3 className="text-lg font-medium mb-4">
                 Players ({room.players.length}/{room.maxPlayers})
               </h3>
@@ -527,13 +527,13 @@ export default function RoomPageClient() {
                       ></div>
                       <span className="font-medium">{player.displayName}</span>
                       {player.username === room.hostUsername && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        <span className="text-xs bg-blue-900/30 text-blue-300 px-2 py-1 rounded">
                           Host
                         </span>
                       )}
                       {isGameActive && room.gameType === "TicTacToe" && (
                         <span
-                          className={`text-xs font-bold ${player.playerOrder === 0 ? "text-blue-600" : "text-red-600"}`}
+                          className={`text-xs font-bold ${player.playerOrder === 0 ? "text-blue-400" : "text-red-400"}`}
                         >
                           {player.playerOrder === 0 ? "X" : "O"}
                         </span>
@@ -541,7 +541,7 @@ export default function RoomPageClient() {
                     </div>
                     <div className="flex items-center space-x-2">
                       {player.isReady && (
-                        <span className="text-green-600 text-sm">
+                        <span className="text-green-400 text-sm">
                           ✓ Ready
                         </span>
                       )}
@@ -551,16 +551,16 @@ export default function RoomPageClient() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
               <h3 className="text-lg font-medium mb-4">Chat</h3>
               <div className="space-y-4">
-                <div className="h-64 overflow-y-auto border border-gray-200 rounded p-3 space-y-2">
+                <div className="h-64 overflow-y-auto border border-gray-700 rounded p-3 space-y-2">
                   {chatMessages.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No messages yet...</p>
+                    <p className="text-gray-400 text-sm">No messages yet...</p>
                   ) : (
                     chatMessages.map((msg, index) => (
                       <div key={index} className="text-sm">
-                        <span className="font-medium text-blue-600">
+                        <span className="font-medium text-blue-400">
                           {msg.username === username ? "You:" : `${msg.username}:`}
                         </span>
                         <span className="ml-2">{msg.message}</span>
@@ -574,7 +574,7 @@ export default function RoomPageClient() {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onKeyPress={(e) =>
                       e.key === "Enter" && handleSendMessage()
                     }
@@ -582,7 +582,7 @@ export default function RoomPageClient() {
                   <button
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim()}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-300"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-700"
                   >
                     Send
                   </button>

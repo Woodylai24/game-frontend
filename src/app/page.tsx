@@ -137,7 +137,7 @@ export default function Home() {
 
   if (loading || !isAuthenticated || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -176,33 +176,33 @@ export default function Home() {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      WAITING: "bg-yellow-100 text-yellow-800",
-      IN_PROGRESS: "bg-green-100 text-green-800",
-      FINISHED: "bg-gray-100 text-gray-800",
-      PAUSED: "bg-blue-100 text-blue-800",
-      CANCELLED: "bg-red-100 text-red-800",
+      WAITING: "bg-yellow-900/30 text-yellow-300",
+      IN_PROGRESS: "bg-green-900/30 text-green-300",
+      FINISHED: "bg-gray-800 text-gray-300",
+      PAUSED: "bg-blue-900/30 text-blue-300",
+      CANCELLED: "bg-red-900/30 text-red-300",
     };
-    return styles[status] || "bg-gray-100 text-gray-800";
+    return styles[status] || "bg-gray-800 text-gray-300";
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gray-950">
+      <header className="bg-gray-900 border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-xl font-semibold">Game Stack</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-400">
                 Welcome, {user.username}
               </span>
               {isGuest && (
-                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-amber-900/30 text-amber-300 px-2 py-0.5 rounded-full">
                   Guest
                 </span>
               )}
               <Link
                 href="/settings"
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-400 hover:text-gray-200"
                 title="Settings"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +212,7 @@ export default function Home() {
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-sm text-red-600 hover:text-red-800"
+                className="text-sm text-red-400 hover:text-red-300"
               >
                 Logout
               </button>
@@ -227,7 +227,7 @@ export default function Home() {
             <h2 className="text-lg font-medium">Your Rooms</h2>
             <button
               onClick={fetchMyRooms}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-blue-400 hover:text-blue-300"
             >
               Refresh
             </button>
@@ -235,7 +235,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {myRooms.length === 0 ? (
-              <div className="col-span-full text-center py-6 text-gray-500 bg-white rounded-lg shadow border">
+              <div className="col-span-full text-center py-6 text-gray-400 bg-gray-900 rounded-lg border border-gray-800">
                 You&apos;re not in any rooms
               </div>
             ) : (
@@ -248,7 +248,7 @@ export default function Home() {
                     exit={{ opacity: 0, y: -20 }}
                     layout
                     transition={{ duration: 0.3 }}
-                    className="bg-white p-4 rounded-lg shadow border"
+                    className="bg-gray-900 p-4 rounded-lg border border-gray-800"
                   >
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium">{room.roomName}</h3>
@@ -256,10 +256,10 @@ export default function Home() {
                       {room.status === "WAITING" ? "Waiting" : room.status === "IN_PROGRESS" ? "In Progress" : room.status === "FINISHED" ? "Finished" : room.status}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-400 mb-2">
                     Game: {room.gameType}{room.isPrivate && <span className="ml-1 text-xs">🔒</span>}
                   </p>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-gray-400 mb-3">
                     Players: {room.currentPlayers}/{room.maxPlayers}
                   </p>
                   {getRoomActionButton(room)}
@@ -297,12 +297,12 @@ export default function Home() {
                 value={joinRoomCode}
                 onChange={(e) => setJoinRoomCode(e.target.value)}
                 placeholder="Enter room code to join"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={() => handleJoinRoom(joinRoomCode)}
                 disabled={!joinRoomCode.trim()}
-                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-300"
+                className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-700"
               >
                 Join Room
               </button>
@@ -311,7 +311,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {rooms.length === 0 ? (
-              <div className="col-span-full text-center py-8 text-gray-500">
+              <div className="col-span-full text-center py-8 text-gray-400">
                 No rooms available. Create one to get started!
               </div>
             ) : (
@@ -324,27 +324,27 @@ export default function Home() {
                     exit={{ opacity: 0, y: -20 }}
                     layout
                     transition={{ duration: 0.3 }}
-                    className="bg-white p-4 rounded-lg shadow border"
+                    className="bg-gray-900 p-4 rounded-lg border border-gray-800"
                   >
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium">{room.roomName}</h3>
                     <span
                       className={`px-2 py-1 text-xs rounded ${
                         room.status === "WAITING"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
+                          ? "bg-green-900/30 text-green-300"
+                          : "bg-yellow-900/30 text-yellow-300"
                       }`}
                     >
                       {room.status}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-400 mb-2">
                     Game: {room.gameType}{room.isPrivate && <span className="ml-1 text-xs">🔒</span>}
                   </p>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-gray-400 mb-2">
                     Players: {room.currentPlayers}/{room.maxPlayers}
                   </p>
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-gray-400 mb-3">
                     Host: {room.hostUsername}
                   </p>
                   <button
@@ -353,7 +353,7 @@ export default function Home() {
                       room.currentPlayers >= room.maxPlayers ||
                       room.status !== "WAITING"
                     }
-                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
+                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-sm"
                   >
                     {room.currentPlayers >= room.maxPlayers ? "Full" : "Join"}
                   </button>
@@ -437,30 +437,30 @@ function CreateRoomModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+      <div className="bg-gray-900 p-6 rounded-lg border border-gray-800 w-full max-w-md">
         <h2 className="text-lg font-medium mb-4">Create New Room</h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-200 mb-1">
               Room Name
             </label>
             <input
               type="text"
               value={roomName}
               onChange={(e) => setRoomName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter room name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-200 mb-1">
               Game Type
             </label>
             <select
               value={gameType}
               onChange={(e) => handleGameTypeChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {/* Tic-Tac-Toe is dev-only — hidden from production builds. */}
               {process.env.NODE_ENV !== "production" && (
@@ -471,14 +471,14 @@ function CreateRoomModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-200 mb-1">
               Max Players
             </label>
             <select
               value={maxPlayers}
               onChange={(e) => setMaxPlayers(Number(e.target.value))}
               disabled={maxPlayersLocked}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed"
             >
               <option value={2}>2 Players</option>
               <option value={3}>3 Players</option>
@@ -487,7 +487,7 @@ function CreateRoomModal({
               <option value={8}>8 Players</option>
             </select>
             {maxPlayersLocked && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-400 mt-1">
                 This game requires exactly 2 players
               </p>
             )}
@@ -503,7 +503,7 @@ function CreateRoomModal({
             />
             <label
               htmlFor="private"
-              className="text-sm font-medium text-gray-700"
+              className="text-sm font-medium text-gray-200"
             >
               Private Room
             </label>
@@ -511,14 +511,14 @@ function CreateRoomModal({
 
           {isPrivate && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-200 mb-1">
                 Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter password"
               />
             </div>
@@ -528,14 +528,14 @@ function CreateRoomModal({
         <div className="flex justify-end space-x-2 mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            className="px-4 py-2 text-gray-400 hover:text-gray-200"
           >
             Cancel
           </button>
           <button
             onClick={handleCreateRoom}
             disabled={roomName.trim().length < 3 || isCreating}
-            className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-300"
+            className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-700"
           >
             {isCreating ? "Creating..." : "Create Room"}
           </button>

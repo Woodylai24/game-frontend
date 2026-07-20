@@ -61,11 +61,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+      <div className="bg-gray-900 p-8 rounded-lg border border-gray-800 w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-6">Login</h1>
         {displayError && (
-          <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-sm">
+          <div className="bg-red-900/30 text-red-400 p-3 rounded mb-4 text-sm">
             {displayError}
           </div>
         )}
@@ -73,7 +73,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-gray-200 mb-1"
             >
               Email
             </label>
@@ -82,7 +82,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="you@example.com"
               required
             />
@@ -90,7 +90,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-medium text-gray-200 mb-1"
             >
               Password
             </label>
@@ -99,7 +99,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Your password"
               required
             />
@@ -107,19 +107,19 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || guestLoading || !email || !password}
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-gray-700 disabled:cursor-not-allowed"
           >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
         <div className="my-4 flex items-center">
-          <div className="flex-1 border-t border-gray-200"></div>
-          <span className="px-3 text-sm text-gray-500">or</span>
-          <div className="flex-1 border-t border-gray-200"></div>
+          <div className="flex-1 border-t border-gray-700"></div>
+          <span className="px-3 text-sm text-gray-400">or</span>
+          <div className="flex-1 border-t border-gray-700"></div>
         </div>
         <a
           href={`${API_BASE}/oauth2/authorization/google`}
-          className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 font-medium"
+          className="w-full flex items-center justify-center gap-2 border border-gray-700 bg-gray-800 text-gray-200 py-2 px-4 rounded-md hover:bg-gray-700 font-medium"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -130,20 +130,20 @@ export default function LoginPage() {
           Continue with Google
         </a>
         <div className="my-4 flex items-center">
-          <div className="flex-1 border-t border-gray-200"></div>
-          <span className="px-3 text-sm text-gray-500">or</span>
-          <div className="flex-1 border-t border-gray-200"></div>
+          <div className="flex-1 border-t border-gray-700"></div>
+          <span className="px-3 text-sm text-gray-400">or</span>
+          <div className="flex-1 border-t border-gray-700"></div>
         </div>
         <button
           onClick={handleGuestLogin}
           disabled={loading || guestLoading}
-          className="w-full border-2 border-amber-500 text-amber-700 py-2 px-4 rounded-md hover:bg-amber-50 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full border-2 border-amber-500 text-amber-300 py-2 px-4 rounded-md hover:bg-amber-900/30 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {guestLoading ? "Joining..." : "Play as Guest"}
         </button>
-        <p className="text-center text-sm text-gray-600 mt-4">
+        <p className="text-center text-sm text-gray-400 mt-4">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="text-blue-500 hover:underline">
+          <Link href="/register" className="text-blue-400 hover:underline">
             Register
           </Link>
         </p>
