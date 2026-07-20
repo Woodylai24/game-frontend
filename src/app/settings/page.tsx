@@ -27,7 +27,7 @@ export default function SettingsPage() {
 
   if (loading || !isAuthenticated || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -77,19 +77,19 @@ export default function SettingsPage() {
     switch (user.authProvider) {
       case "google":
         return (
-          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-blue-900/30 text-blue-300 px-2 py-0.5 rounded-full">
             Google
           </span>
         );
       case "guest":
         return (
-          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-amber-900/30 text-amber-300 px-2 py-0.5 rounded-full">
             Guest
           </span>
         );
       default:
         return (
-          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-green-900/30 text-green-300 px-2 py-0.5 rounded-full">
             Email
           </span>
         );
@@ -97,13 +97,13 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gray-950">
+      <header className="bg-gray-900 border-gray-800">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <button
               onClick={() => router.push("/")}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-400 hover:text-gray-200"
             >
               &larr; Back to Lobby
             </button>
@@ -115,19 +115,19 @@ export default function SettingsPage() {
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isGuest && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-            <p className="text-amber-800 text-sm">
+          <div className="bg-amber-900/30 border border-amber-700 rounded-lg p-4 mb-6">
+            <p className="text-amber-300 text-sm">
               You&apos;re playing as a guest. Your progress won&apos;t be
               saved across devices.
             </p>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow divide-y">
+        <div className="bg-gray-900 rounded-lg border border-gray-800 divide-y">
           <div className="p-6">
             <div className="flex justify-between items-center">
               <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">
+                <label className="block text-sm font-medium text-gray-400 mb-1">
                   Username
                 </label>
                 {editingUsername ? (
@@ -136,7 +136,7 @@ export default function SettingsPage() {
                       type="text"
                       value={newUsername}
                       onChange={(e) => setNewUsername(e.target.value)}
-                      className="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-3 py-1.5 border border-gray-700 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       minLength={3}
                       maxLength={20}
                       autoFocus
@@ -144,7 +144,7 @@ export default function SettingsPage() {
                     <button
                       onClick={handleUsernameSave}
                       disabled={usernameSaving}
-                      className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 disabled:bg-gray-300"
+                      className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 disabled:bg-gray-700"
                     >
                       {usernameSaving ? "Saving..." : "Save"}
                     </button>
@@ -153,7 +153,7 @@ export default function SettingsPage() {
                         setEditingUsername(false);
                         setUsernameError("");
                       }}
-                      className="text-gray-500 hover:text-gray-700 px-2"
+                      className="text-gray-400 hover:text-gray-200 px-2"
                     >
                       Cancel
                     </button>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
                     setEditingUsername(true);
                     setUsernameError("");
                   }}
-                  className="text-blue-500 hover:text-blue-700 text-sm"
+                  className="text-blue-400 hover:text-blue-300 text-sm"
                 >
                   Edit
                 </button>
@@ -181,7 +181,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="p-6">
-            <label className="block text-sm font-medium text-gray-500 mb-1">
+            <label className="block text-sm font-medium text-gray-400 mb-1">
               Display Name
             </label>
             {editingDisplayName ? (
@@ -190,13 +190,13 @@ export default function SettingsPage() {
                   type="text"
                   value={newDisplayName}
                   onChange={(e) => setNewDisplayName(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-3 py-1.5 border border-gray-700 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoFocus
                 />
                 <button
                   onClick={handleDisplayNameSave}
                   disabled={displayNameSaving}
-                  className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 disabled:bg-gray-300"
+                  className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 disabled:bg-gray-700"
                 >
                   {displayNameSaving ? "Saving..." : "Save"}
                 </button>
@@ -205,7 +205,7 @@ export default function SettingsPage() {
                     setEditingDisplayName(false);
                     setDisplayNameError("");
                   }}
-                  className="text-gray-500 hover:text-gray-700 px-2"
+                  className="text-gray-400 hover:text-gray-200 px-2"
                 >
                   Cancel
                 </button>
@@ -219,7 +219,7 @@ export default function SettingsPage() {
                     setEditingDisplayName(true);
                     setDisplayNameError("");
                   }}
-                  className="text-blue-500 hover:text-blue-700 text-sm"
+                  className="text-blue-400 hover:text-blue-300 text-sm"
                 >
                   Edit
                 </button>
@@ -231,22 +231,22 @@ export default function SettingsPage() {
           </div>
 
           <div className="p-6">
-            <label className="block text-sm font-medium text-gray-500 mb-1">
+            <label className="block text-sm font-medium text-gray-400 mb-1">
               Email
             </label>
             <p className="text-lg">{user.email || "—"}</p>
           </div>
 
           <div className="p-6">
-            <label className="block text-sm font-medium text-gray-500 mb-1">
+            <label className="block text-sm font-medium text-gray-400 mb-1">
               Auth Provider
             </label>
             <div className="mt-1">{authProviderBadge()}</div>
           </div>
         </div>
 
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-sm font-medium text-gray-500 mb-3">
+        <div className="mt-8 bg-gray-900 rounded-lg border border-gray-800 p-6">
+          <h2 className="text-sm font-medium text-gray-400 mb-3">
             Danger Zone
           </h2>
           <button
