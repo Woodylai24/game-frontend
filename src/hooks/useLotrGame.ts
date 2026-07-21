@@ -6,7 +6,7 @@ import { webSocketService } from "@/services/websocket";
 import { useConnectionStatus } from "@/context/ConnectionContext";
 import { LotrStateResponse, LotrGameState } from "@/types/lotr";
 
-export function useLotrGame(sessionId: number, roomId: number, username: string) {
+export function useLotrGame(sessionId: string, roomId: number, username: string) {
   const { reconnectCount } = useConnectionStatus();
   const [lotrState, setLotrState] = useState<LotrGameState | null>(null);
   const [gameStatus, setGameStatus] = useState<string>("IN_PROGRESS");

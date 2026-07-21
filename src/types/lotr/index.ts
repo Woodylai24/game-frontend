@@ -123,7 +123,7 @@ export interface LotrLogEntry {
 }
 
 export interface LotrStateResponse {
-  sessionId: number;
+  sessionId: string;
   roomId: number;
   gameStatus: string;
   parsedState: LotrGameState | null;

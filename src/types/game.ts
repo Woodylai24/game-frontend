@@ -38,7 +38,7 @@ export interface GameRoom {
   createdAt: string;
   hostUsername: string;
   players: Player[];
-  activeGameSessionId: number | null;
+  activeGameSessionId: string | null;
   gameFinished?: boolean;
 }
 
@@ -83,7 +83,7 @@ export interface GameEvent {
  * assumptions into every game's session shape.
  */
 export interface GameSessionData {
-  id: number;
+  id: string;
   roomId: number;
   roomCode: string;
   gameStatus: "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "FINISHED" | "CANCELLED";
