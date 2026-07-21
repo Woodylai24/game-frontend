@@ -90,7 +90,7 @@ export interface LotrGameContextValue {
 const LotrGameContext = createContext<LotrGameContextValue | null>(null);
 
 interface ProviderProps {
-  sessionId: number;
+  sessionId: string;
   roomId: number;
   username: string;
   onBackToRoom?: () => void;

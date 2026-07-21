@@ -15,9 +15,10 @@ export default function GamePageClient() {
   // Static export caveat: useParams() returns the placeholder value ("_")
   // baked into the prerendered HTML, not the real URL segment (a known,
   // long-standing Next.js limitation with output: 'export'). Read the path
-  // directly and parse it instead. Path looks like "/game/<id>/".
+  // directly and parse it instead. Path looks like "/game/<code>/".
+  // sessionId is the random session code (string) — never coerce with Number().
   const pathname = usePathname();
-  const sessionId = Number(pathname.split("/")[2]);
+  const sessionId = pathname.split("/")[2];
   const { user, loading, isAuthenticated } = useAuth();
   const { reconnectCount } = useConnectionStatus();
 

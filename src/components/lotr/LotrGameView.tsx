@@ -8,7 +8,7 @@ import PlayerAidModal from "./PlayerAidModal";
 import ChatBottomSheet from "./ChatBottomSheet";
 
 interface LotrGameViewProps {
-  sessionId: number;
+  sessionId: string;
   roomId: number;
   username: string;
   onBackToRoom: () => void;
