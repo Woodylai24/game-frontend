@@ -14,6 +14,7 @@ import { useConnectionStatus } from "@/context/ConnectionContext";
 import { webSocketService } from "@/services/websocket";
 import { apiFetch } from "@/services/api";
 import { loadChatMessages, saveChatMessage } from "@/lib/chatStorage";
+import OnlineDot from "@/components/OnlineDot";
 
 export default function RoomPageClient() {
   const router = useRouter();
@@ -41,6 +42,15 @@ export default function RoomPageClient() {
   // Ref guard: prevents double join during React Strict Mode's synchronous
   // mount→unmount→remount cycle (setHasJoined is async, arrives too late)
   const joinInitiatedRef = useRef(false);
+
+  // Latest room id, kept in a ref so the reconnect effect below can read it
+  // without subscribing to `room` (which would re-trigger the effect every
+  // time the roster updates — an infinite loop, since the effect itself calls
+  // setRoom). Only reconnectCount should drive that effect's re-execution.
+  const roomIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    roomIdRef.current = room?.id ?? null;
+  }, [room?.id]);
 
   const username = user?.username || "";
 
@@ -210,11 +220,18 @@ export default function RoomPageClient() {
   }, [connectAndJoinRoom, intentionalLeave, hasJoined]);
 
   // Re-sync room state after a WS reconnect (skips the initial connect —
-  // connectAndJoinRoom already fetched). The subscriptions auto-replay via
-  // the websocket.ts registry (join-response + room topics), so we don't
-  // re-join; we just re-pull state to
-  // catch anything broadcast during the outage. If the room was deleted while
-  // we were disconnected, redirect home with a message.
+  // connectAndJoinRoom already fetched). Defensive re-join: with
+  // Player.DISCONNECTED removed (#21 cleanup), this is no longer load-bearing
+  // — the player stays ACTIVE across a WS drop, so membership-gated endpoints
+  // won't reject on reconnect. But the re-join is harmless (backend
+  // idempotently reactivates an already-ACTIVE player) and keeps the flow
+  // robust. If the room was deleted while disconnected, the GET 404s and we
+  // redirect home.
+  //
+  // IMPORTANT: this effect's deps are reconnectCount + identity inputs only.
+  // `room` must NOT be a dep — the effect calls setRoom, so depending on room
+  // creates an infinite loop (reconnect -> joinRoom -> broadcast -> setRoom ->
+  // effect re-fires -> joinRoom again -> ...). Read room.id via roomIdRef.
   const initialReconnectSeen = useRef(false);
   useEffect(() => {
     if (reconnectCount === 0) return;
@@ -223,6 +240,12 @@ export default function RoomPageClient() {
       return;
     }
     if (!hasJoined || intentionalLeave) return;
+    const roomId = roomIdRef.current;
+    if (roomId == null) return;
+
+    // Re-join first: reactivate the player row, then the GET reflects the
+    // honest roster (and downstream game-page fetches won't 403).
+    webSocketService.joinRoom(roomId, roomCode, username, password);
 
     apiFetch(`/api/rooms/code/${roomCode}`)
       .then((response) => {
@@ -235,7 +258,7 @@ export default function RoomPageClient() {
         }
       })
       .catch(() => {});
-  }, [reconnectCount, roomCode, hasJoined, intentionalLeave, router]);
+  }, [reconnectCount, roomCode, hasJoined, intentionalLeave, router, username, password]);
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !room) return;
@@ -532,13 +555,7 @@ export default function RoomPageClient() {
                     className="flex items-center justify-between"
                   >
                     <div className="flex items-center space-x-2">
-                      <div
-                        className={`w-3 h-3 rounded-full ${
-                          player.status === "ACTIVE"
-                            ? "bg-green-500"
-                            : "bg-gray-400"
-                        }`}
-                      ></div>
+                      <OnlineDot username={player.username} />
                       <span className="font-medium">{player.displayName}</span>
                       {player.username === room.hostUsername && (
                         <span className="text-xs bg-blue-900/30 text-blue-300 px-2 py-1 rounded">

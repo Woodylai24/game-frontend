@@ -65,16 +65,26 @@ export class WebSocketService {
           console.log("STOMP: " + str);
         },
         reconnectDelay: 5000,
+        // Heartbeat 4s/4s — must match the server's WebSocketConfig
+        // (setHeartbeatValue([4000, 4000])). When either side stops hearing
+        // from the other for ~2 intervals (~8s), STOMP tears down the session
+        // → the server's PresenceEventListener fires on SessionDisconnectEvent
+        // → the user's green dot goes gray. This is what makes ungraceful
+        // disconnects detectable quickly. @stomp/stompjs does NOT relax its
+        // read deadline to a slower server-offered interval, so both sides
+        // must agree on 4s.
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
       });
 
       // Fires on initial connect AND on every auto-reconnect.
+      // Presence is now server-driven: the backend's PresenceEventListener
+      // fires on real SessionConnectedEvent (handshake complete), so we no
+      // longer send an explicit /app/user/connect here.
       this.client.onConnect = () => {
         console.log("Connected to WebSocket");
         this.connected = true;
         this.reconnectCount++;
-        this.sendUserConnect();
         this.resubscribeAll();
         this.emitStateChange("connected");
         resolve();
@@ -116,9 +126,9 @@ export class WebSocketService {
   }
 
   disconnect(): void {
-    if (this.connected) {
-      this.sendUserDisconnect();
-    }
+    // Presence is now server-driven: the backend's PresenceEventListener fires
+    // on real SessionDisconnectEvent (which deactivate() triggers), so we no
+    // longer send an explicit /app/user/disconnect here.
     if (this.client) {
       this.client.deactivate();
     }
@@ -349,23 +359,6 @@ export class WebSocketService {
     });
   }
 
-  private sendUserConnect(): void {
-    if (!this.connected) return;
-
-    this.client!.publish({
-      destination: "/app/user/connect",
-      body: JSON.stringify({}),
-    });
-  }
-
-  private sendUserDisconnect(): void {
-    if (!this.connected) return;
-
-    this.client!.publish({
-      destination: "/app/user/disconnect",
-      body: JSON.stringify({}),
-    });
-  }
 }
 
 export const webSocketService = new WebSocketService();

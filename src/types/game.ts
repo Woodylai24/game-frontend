@@ -20,7 +20,7 @@ export interface Player {
   username: string;
   displayName: string;
   playerOrder: number;
-  status: "ACTIVE" | "DISCONNECTED" | "LEFT" | "KICKED";
+  status: "ACTIVE" | "LEFT" | "KICKED";
   joinedAt: string;
   isReady: boolean;
   score: number;
