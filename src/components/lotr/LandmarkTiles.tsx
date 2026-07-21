@@ -46,7 +46,9 @@ export default function LandmarkTiles() {
             >
               <img src={getLandmarkImagePath(tile.id)} alt={tile.name}
                 className={`w-32 h-32 sm:w-40 sm:h-40 rounded border-2 object-contain
-                  ${interactiveTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer" : "border-gray-600"}`} />
+                  ${interactiveTurn ? (canAfford(tile)
+                    ? "border-green-400 hover:border-green-300 cursor-pointer"
+                    : "border-red-400 hover:border-red-300 cursor-pointer") : "border-gray-600"}`} />
             </motion.button>
           ))}
         </AnimatePresence>

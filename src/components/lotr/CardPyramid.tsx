@@ -61,7 +61,9 @@ export default function CardPyramid() {
                     className={`w-[80px] h-[120px] rounded border-2 text-[8px] transition-all overflow-hidden relative
                       ${!slot.cardDefId ? "border-gray-700 bg-gray-700/30 opacity-30" :
                         !slot.faceUp ? "border-gray-600 bg-gray-700" :
-                        isAvailable && interactiveTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
+                        isAvailable && interactiveTurn ? (card && canAfford(card)
+                        ? "border-green-400 hover:border-green-300 cursor-pointer hover:scale-105 shadow-lg"
+                        : "border-red-400 hover:border-red-300 cursor-pointer hover:scale-105 shadow-lg") :
                         "border-gray-500 opacity-60"}
                     `}
                   >
@@ -107,7 +109,9 @@ export default function CardPyramid() {
                   className={`w-[90px] h-[135px] rounded border-2 text-[10px] transition-all overflow-hidden relative
                     ${!slot.cardDefId ? "border-gray-700 bg-gray-700/30 opacity-30" :
                       !slot.faceUp ? "border-gray-600 bg-gray-700" :
-                      isAvailable && interactiveTurn ? "border-yellow-400 hover:border-yellow-300 cursor-pointer hover:scale-105 shadow-lg" :
+                      isAvailable && interactiveTurn ? (card && canAfford(card)
+                        ? "border-green-400 hover:border-green-300 cursor-pointer hover:scale-105 shadow-lg"
+                        : "border-red-400 hover:border-red-300 cursor-pointer hover:scale-105 shadow-lg") :
                       "border-gray-500 opacity-60"}
                   `}
                 >
