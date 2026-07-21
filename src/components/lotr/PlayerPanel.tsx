@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LotrPlayerState, LotrCardColor, LotrRace, LotrSkill, getCardImagePath, getRaceIconPath, getSkillIconPath, getLandmarkImagePath } from "@/types/lotr";
 import { getCardDef, getTokenDef, getLandmarkDef } from "@/lib/lotrCards";
 import { useLotrGameContext } from "@/context/LotrGameContext";
+import OnlineDot from "@/components/OnlineDot";
 
 const COLOR_ORDER: LotrCardColor[] = ["RED", "GREEN", "BLUE", "GREY", "PURPLE", "YELLOW"];
 
@@ -61,8 +62,9 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props
   return (
     <div className={`rounded-lg border-2 p-3 ${isCurrentTurn ? "ring-2 ring-yellow-400" : ""} ${fellowshipColors}`}>
       <div className="flex items-center justify-between mb-2">
-        <div className="text-sm font-bold text-white">
-          {playerName}{!isOpponent ? " (You)" : ""}
+        <div className="flex items-center gap-2 text-sm font-bold text-white">
+          {playerName && <OnlineDot username={playerName} />}
+          <span>{playerName}{!isOpponent ? " (You)" : ""}</span>
         </div>
         {isCurrentTurn && <div className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full font-bold whitespace-nowrap shrink-0">{isOpponent ? "THEIR TURN" : "YOUR TURN"}</div>}
       </div>
