@@ -21,6 +21,16 @@ export default function Home() {
   const { status: wsStatus, reconnectCount } = useConnectionStatus();
   const wsConnected = wsStatus === "connected";
   const router = useRouter();
+  // Read ?kicked=1 client-side (not useSearchParams — this is a static export;
+  // useSearchParams bails to client rendering and complicates the build).
+  const [kickedNotice, setKickedNotice] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("kicked") === "1") {
+      setKickedNotice(true);
+      // Strip the param so the notice doesn't persist across manual refreshes.
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
   const [rooms, setRooms] = useState<GameRoom[]>([]);
   const [myRooms, setMyRooms] = useState<GameRoom[]>([]);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
@@ -230,6 +240,14 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {kickedNotice && (
+        <div className="bg-red-900/30 border-b border-red-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 text-sm text-red-300 text-center">
+            You were removed from the room.
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">

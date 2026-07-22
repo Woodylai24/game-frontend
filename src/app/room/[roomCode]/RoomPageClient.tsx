@@ -43,6 +43,11 @@ export default function RoomPageClient() {
   // mount→unmount→remount cycle (setHasJoined is async, arrives too late)
   const joinInitiatedRef = useRef(false);
 
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [settingsGameType, setSettingsGameType] = useState("");
+
   // Latest room id, kept in a ref so the reconnect effect below can read it
   // without subscribing to `room` (which would re-trigger the effect every
   // time the roster updates — an infinite loop, since the effect itself calls
@@ -162,6 +167,16 @@ export default function RoomPageClient() {
               unsubscribes.push(
                 webSocketService.subscribeToGameEvents(roomId, (event) => {
                   handleGameEvent(event);
+                }),
+              );
+              // Kick notification — sent only to the kicked user. Bounce them
+              // home with a notice; they can't rejoin (backend rejects KICKED).
+              unsubscribes.push(
+                webSocketService.subscribeToKickNotification(username, () => {
+                  setIntentionalLeave(true);
+                  setHasJoined(false);
+                  joinInitiatedRef.current = false;
+                  router.push("/?kicked=1");
                 }),
               );
 
@@ -292,9 +307,50 @@ export default function RoomPageClient() {
     router.push("/");
   };
 
+  const handleBackToLobby = () => {
+    // Navigate home WITHOUT leaving the room server-side — the player stays
+    // ACTIVE and can re-enter via "Your Rooms". Distinct from handleLeaveRoom
+    // (removes membership) and handleReturnToLobby (finished-game→waiting WS event).
+    router.push("/");
+  };
+
   const handleReturnToLobby = () => {
     if (!room) return;
     webSocketService.returnToLobby(room.id, username);
+  };
+
+  const handleKickPlayer = (targetUsername: string) => {
+    if (!room) return;
+    webSocketService.kickPlayer(room.id, targetUsername);
+  };
+
+  const handleMakeHost = (targetUsername: string) => {
+    if (!room) return;
+    webSocketService.transferHost(room.id, targetUsername);
+  };
+
+  const handleCopyCode = async () => {
+    if (!room) return;
+    try {
+      await navigator.clipboard.writeText(room.roomCode);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 1500);
+    } catch {
+      // clipboard API can be unavailable (insecure context) — silently ignore
+    }
+  };
+
+  const handleOpenSettings = () => {
+    setSettingsGameType(room?.gameType ?? "LOTR");
+    setShowSettings(true);
+  };
+
+  const handleSaveSettings = () => {
+    if (!room) return;
+    if (settingsGameType !== room.gameType) {
+      webSocketService.switchGame(room.id, settingsGameType);
+    }
+    setShowSettings(false);
   };
 
   const handlePasswordSubmit = () => {
@@ -407,9 +463,35 @@ export default function RoomPageClient() {
               </Link>
               <div>
                 <h1 className="text-xl font-semibold">{room.roomName}</h1>
-                <p className="text-sm text-gray-400">
-                  Room Code: {room.roomCode}
-                </p>
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-sm text-gray-400">
+                    Room Code: {room.roomCode}
+                  </span>
+                  <button
+                    onClick={handleCopyCode}
+                    className="text-gray-500 hover:text-gray-300 transition-colors"
+                    title="Copy room code"
+                  >
+                    {copiedCode ? (
+                      <span className="text-green-400 text-xs">Copied!</span>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -422,7 +504,13 @@ export default function RoomPageClient() {
                 </span>
               )}
               <button
-                onClick={handleLeaveRoom}
+                onClick={handleBackToLobby}
+                className="text-sm text-gray-400 hover:text-gray-200"
+              >
+                Back to Lobby
+              </button>
+              <button
+                onClick={() => setShowLeaveConfirm(true)}
                 disabled={isGameActive}
                 className={`text-sm ${
                   isGameActive
@@ -442,7 +530,29 @@ export default function RoomPageClient() {
           <div className="lg:col-span-2">
             <div className="bg-gray-900 rounded-lg border border-gray-800 p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium">Game: {room.gameType}</h2>
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-lg font-medium">Game: {gameTypeLabel(room.gameType)}</h2>
+                  <button
+                    onClick={handleOpenSettings}
+                    className="text-gray-500 hover:text-gray-300 transition-colors"
+                    title="Room settings"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                  </button>
+                </div>
                 <span
                   className={`px-3 py-1 text-sm rounded-full ${
                     room.status === "WAITING"
@@ -549,36 +659,60 @@ export default function RoomPageClient() {
                 Players ({room.players.length}/{room.maxPlayers})
               </h3>
               <div className="space-y-3">
-                {room.players.map((player) => (
-                  <div
-                    key={player.id}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <OnlineDot username={player.username} />
-                      <span className="font-medium">{player.displayName}</span>
-                      {player.username === room.hostUsername && (
-                        <span className="text-xs bg-blue-900/30 text-blue-300 px-2 py-1 rounded">
-                          Host
-                        </span>
-                      )}
-                      {isGameActive && room.gameType === "TicTacToe" && (
-                        <span
-                          className={`text-xs font-bold ${player.playerOrder === 0 ? "text-blue-400" : "text-red-400"}`}
-                        >
-                          {player.playerOrder === 0 ? "X" : "O"}
-                        </span>
-                      )}
+                {room.players.map((player) => {
+                  const isPlayerHost = player.username === room.hostUsername;
+                  // Host-only admin actions, WAITING-only (no mid-game tampering).
+                  const canAdmin =
+                    isHost && !isPlayerHost && room.status === "WAITING";
+                  return (
+                    <div
+                      key={player.id}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <OnlineDot username={player.username} />
+                        <span className="font-medium">{player.displayName}</span>
+                        {isPlayerHost && (
+                          <span className="text-xs bg-blue-900/30 text-blue-300 px-2 py-1 rounded">
+                            Host
+                          </span>
+                        )}
+                        {isGameActive && room.gameType === "TicTacToe" && (
+                          <span
+                            className={`text-xs font-bold ${player.playerOrder === 0 ? "text-blue-400" : "text-red-400"}`}
+                          >
+                            {player.playerOrder === 0 ? "X" : "O"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        {player.isReady && (
+                          <span className="text-green-400 text-sm">
+                            ✓ Ready
+                          </span>
+                        )}
+                        {canAdmin && (
+                          <>
+                            <button
+                              onClick={() => handleMakeHost(player.username)}
+                              className="text-xs text-gray-400 hover:text-blue-300"
+                              title="Make this player the host"
+                            >
+                              Make Host
+                            </button>
+                            <button
+                              onClick={() => handleKickPlayer(player.username)}
+                              className="text-xs text-red-400 hover:text-red-300"
+                              title="Remove this player from the room"
+                            >
+                              Kick
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {player.isReady && (
-                        <span className="text-green-400 text-sm">
-                          ✓ Ready
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -623,6 +757,107 @@ export default function RoomPageClient() {
           </div>
         </div>
       </main>
+
+      {showLeaveConfirm && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowLeaveConfirm(false)}
+        >
+          <div
+            className="bg-gray-900 p-6 rounded-lg border border-gray-800 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-medium mb-2">Leave room?</h2>
+            <p className="text-sm text-gray-400 mb-6">
+              You&apos;ll be removed from this room. You can rejoin later from &quot;Your Rooms&quot;.
+            </p>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowLeaveConfirm(false)}
+                className="px-4 py-2 text-gray-400 hover:text-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLeaveConfirm(false);
+                  handleLeaveRoom();
+                }}
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSettings && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowSettings(false)}
+        >
+          <div
+            className="bg-gray-900 p-6 rounded-lg border border-gray-800 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-medium mb-4">Room Settings</h2>
+            <label className="block text-sm font-medium text-gray-200 mb-1">
+              Game
+            </label>
+            <select
+              value={settingsGameType}
+              onChange={(e) => setSettingsGameType(e.target.value)}
+              disabled={!isHost || room.status !== "WAITING"}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed"
+            >
+              {process.env.NODE_ENV !== "production" && (
+                <option value="TicTacToe">Tic Tac Toe</option>
+              )}
+              <option value="LOTR">The Lord of the Rings: Duel for Middle-earth</option>
+            </select>
+            {!isHost && (
+              <p className="text-xs text-gray-500 mt-2">
+                Only the host can change settings.
+              </p>
+            )}
+            {isHost && room.status !== "WAITING" && (
+              <p className="text-xs text-gray-500 mt-2">
+                Settings can&apos;t be changed while a game is in progress.
+              </p>
+            )}
+            <div className="flex justify-end space-x-2 mt-6">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="px-4 py-2 text-gray-400 hover:text-gray-200"
+              >
+                Close
+              </button>
+              {isHost && room.status === "WAITING" && (
+                <button
+                  onClick={handleSaveSettings}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Save
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Friendly game-type label. The stored value is an opaque code; the dropdown
+// in CreateRoomModal uses the full names, so mirror them here for consistency.
+function gameTypeLabel(gameType: string): string {
+  switch (gameType) {
+    case "LOTR":
+      return "The Lord of the Rings: Duel for Middle-earth";
+    case "TicTacToe":
+      return "Tic Tac Toe";
+    default:
+      return gameType;
+  }
 }
