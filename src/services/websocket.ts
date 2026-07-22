@@ -284,6 +284,33 @@ export class WebSocketService {
     });
   }
 
+  kickPlayer(roomId: number, targetUsername: string): void {
+    if (!this.connected) return;
+
+    this.client!.publish({
+      destination: `/app/room/${roomId}/kick`,
+      body: JSON.stringify({ targetUsername }),
+    });
+  }
+
+  transferHost(roomId: number, targetUsername: string): void {
+    if (!this.connected) return;
+
+    this.client!.publish({
+      destination: `/app/room/${roomId}/transfer-host`,
+      body: JSON.stringify({ targetUsername }),
+    });
+  }
+
+  switchGame(roomId: number, gameType: string): void {
+    if (!this.connected) return;
+
+    this.client!.publish({
+      destination: `/app/room/${roomId}/switch-game`,
+      body: JSON.stringify({ gameType }),
+    });
+  }
+
   subscribeToRoomPlayers(
     roomId: number,
     callback: (room: GameRoom) => void,
@@ -345,6 +372,19 @@ export class WebSocketService {
       (message: StompMessage) => {
         const response = JSON.parse(message.body);
         callback(response);
+      },
+    );
+  }
+
+  subscribeToKickNotification(
+    username: string,
+    callback: (message: string) => void,
+  ): () => void {
+    return this.registerSubscription(
+      `/topic/user/${username}/kicked`,
+      (message: StompMessage) => {
+        const payload = JSON.parse(message.body);
+        callback(payload.message || "You were removed from the room");
       },
     );
   }

@@ -114,4 +114,9 @@ export interface ReturnToLobbyEvent {
   room: GameRoom;
 }
 
-export type GameWsEvent = GameStartedEvent | MoveEvent | GameEndedEvent | ReturnToLobbyEvent;
+export interface KickedEvent {
+  event: "kicked";
+  message: string;
+}
+
+export type GameWsEvent = GameStartedEvent | MoveEvent | GameEndedEvent | ReturnToLobbyEvent | KickedEvent;
