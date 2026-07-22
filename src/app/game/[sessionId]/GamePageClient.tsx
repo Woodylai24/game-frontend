@@ -24,7 +24,6 @@ export default function GamePageClient() {
 
   const [sessionData, setSessionData] = useState<GameSessionData | null>(null);
   const [error, setError] = useState("");
-  const [gameType, setGameType] = useState<string>("");
 
   // Latest roomId/roomCode from sessionData, kept in a ref so the reconnect
   // effect below can read them without depending on sessionData (which would
@@ -128,14 +127,11 @@ export default function GamePageClient() {
     fetchSession();
   }, [reconnectCount, fetchSession, username]);
 
-  useEffect(() => {
-    if (sessionData?.roomCode) {
-      apiFetch(`/api/rooms/code/${sessionData.roomCode}`)
-        .then(r => r.json())
-        .then(room => setGameType(room.gameType || ""))
-        .catch(() => setError("Failed to load game"));
-    }
-  }, [sessionData?.roomCode]);
+  // gameType comes from the session itself (an immutable snapshot taken at
+  // createSession time), NOT from the room. The host can switch the room's
+  // game after this session finishes; reading room.gameType would render the
+  // finished session under the wrong view and crash.
+  const gameType = sessionData?.gameType ?? "";
 
   if (loading || !isAuthenticated || !user) {
     return (

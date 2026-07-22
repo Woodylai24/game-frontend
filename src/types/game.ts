@@ -86,6 +86,7 @@ export interface GameSessionData {
   id: string;
   roomId: number;
   roomCode: string;
+  gameType: string;
   gameStatus: "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "FINISHED" | "CANCELLED";
   gameState: string;
   winnerUsername: string | null;
