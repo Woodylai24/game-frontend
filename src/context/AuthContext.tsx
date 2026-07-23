@@ -32,7 +32,6 @@ interface AuthContextType {
   ) => Promise<void>;
   guestLogin: () => Promise<void>;
   updateUsername: (username: string) => Promise<void>;
-  updateDisplayName: (displayName: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -80,12 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser);
   }, []);
 
-  const updateDisplayName = useCallback(async (displayName: string) => {
-    const { updateDisplayNameApi } = await import("@/services/auth");
-    const updatedUser = await updateDisplayNameApi(displayName);
-    setUser(updatedUser);
-  }, []);
-
   const logout = useCallback(() => {
     setUser(null);
     authLogout();
@@ -102,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         guestLogin,
         updateUsername,
-        updateDisplayName,
         logout,
       }}
     >

@@ -2,14 +2,12 @@ export interface AuthUser {
   id: number;
   username: string;
   email: string | null;
-  displayName: string;
   authProvider: string;
 }
 
 export interface User {
   id: number;
   username: string;
-  displayName: string;
   isOnline: boolean;
   createdAt: string;
   lastActive: string;
@@ -18,7 +16,6 @@ export interface User {
 export interface Player {
   id: number;
   username: string;
-  displayName: string;
   playerOrder: number;
   status: "ACTIVE" | "LEFT" | "KICKED";
   joinedAt: string;
