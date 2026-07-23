@@ -671,7 +671,7 @@ export default function RoomPageClient() {
                     >
                       <div className="flex items-center space-x-2">
                         <OnlineDot username={player.username} />
-                        <span className="font-medium">{player.displayName}</span>
+                        <span className="font-medium">{player.username}</span>
                         {isPlayerHost && (
                           <span className="text-xs bg-blue-900/30 text-blue-300 px-2 py-1 rounded">
                             Host

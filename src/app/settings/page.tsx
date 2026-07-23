@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export default function SettingsPage() {
-  const { user, loading, isAuthenticated, isGuest, updateUsername, updateDisplayName, logout } =
+  const { user, loading, isAuthenticated, isGuest, updateUsername, logout } =
     useAuth();
   const router = useRouter();
 
@@ -13,11 +13,6 @@ export default function SettingsPage() {
   const [newUsername, setNewUsername] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [usernameSaving, setUsernameSaving] = useState(false);
-
-  const [editingDisplayName, setEditingDisplayName] = useState(false);
-  const [newDisplayName, setNewDisplayName] = useState("");
-  const [displayNameError, setDisplayNameError] = useState("");
-  const [displayNameSaving, setDisplayNameSaving] = useState(false);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -50,26 +45,6 @@ export default function SettingsPage() {
       );
     } finally {
       setUsernameSaving(false);
-    }
-  };
-
-  const handleDisplayNameSave = async () => {
-    if (!newDisplayName.trim()) {
-      setDisplayNameError("Display name is required");
-      return;
-    }
-    setDisplayNameError("");
-    setDisplayNameSaving(true);
-
-    try {
-      await updateDisplayName(newDisplayName.trim());
-      setEditingDisplayName(false);
-    } catch (err) {
-      setDisplayNameError(
-        err instanceof Error ? err.message : "Failed to update display name",
-      );
-    } finally {
-      setDisplayNameSaving(false);
     }
   };
 
@@ -178,56 +153,6 @@ export default function SettingsPage() {
                 </button>
               )}
             </div>
-          </div>
-
-          <div className="p-6">
-            <label className="block text-sm font-medium text-gray-400 mb-1">
-              Display Name
-            </label>
-            {editingDisplayName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newDisplayName}
-                  onChange={(e) => setNewDisplayName(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-700 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  autoFocus
-                />
-                <button
-                  onClick={handleDisplayNameSave}
-                  disabled={displayNameSaving}
-                  className="bg-blue-500 text-white px-3 py-1.5 rounded-md text-sm hover:bg-blue-600 disabled:bg-gray-700"
-                >
-                  {displayNameSaving ? "Saving..." : "Save"}
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingDisplayName(false);
-                    setDisplayNameError("");
-                  }}
-                  className="text-gray-400 hover:text-gray-200 px-2"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center">
-                <p className="text-lg">{user.displayName || "—"}</p>
-                <button
-                  onClick={() => {
-                    setNewDisplayName(user.displayName || "");
-                    setEditingDisplayName(true);
-                    setDisplayNameError("");
-                  }}
-                  className="text-blue-400 hover:text-blue-300 text-sm"
-                >
-                  Edit
-                </button>
-              </div>
-            )}
-            {displayNameError && (
-              <p className="text-red-500 text-sm mt-1">{displayNameError}</p>
-            )}
           </div>
 
           <div className="p-6">

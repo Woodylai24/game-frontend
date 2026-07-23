@@ -26,7 +26,6 @@ interface PresenceDelta {
  */
 interface OnlineUser {
   username: string;
-  displayName: string;
 }
 
 interface OnlineUsersContextType {

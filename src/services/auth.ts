@@ -4,7 +4,6 @@ export interface AuthUser {
   id: number;
   username: string;
   email: string | null;
-  displayName: string;
   authProvider: string;
 }
 
@@ -138,27 +137,6 @@ export async function updateUsername(username: string): Promise<AuthUser> {
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.error || "Failed to update username");
-  }
-
-  return data.user;
-}
-
-export async function updateDisplayNameApi(displayName: string): Promise<AuthUser> {
-  const token = getToken();
-  if (!token) throw new Error("Not authenticated");
-
-  const response = await fetch(`${API_BASE}/api/auth/me`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ displayName }),
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || "Failed to update display name");
   }
 
   return data.user;
