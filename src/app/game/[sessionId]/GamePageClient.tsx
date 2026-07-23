@@ -25,15 +25,15 @@ export default function GamePageClient() {
   const [sessionData, setSessionData] = useState<GameSessionData | null>(null);
   const [error, setError] = useState("");
 
-  // Latest roomId/roomCode from sessionData, kept in a ref so the reconnect
-  // effect below can read them without depending on sessionData (which would
+  // Latest roomCode from sessionData, kept in a ref so the reconnect
+  // effect below can read it without depending on sessionData (which would
   // re-trigger the effect every time fetchSession updates sessionData — an
   // infinite loop, since the effect itself calls fetchSession). Only
   // reconnectCount should drive that effect's re-execution.
-  const sessionRoomRef = useRef<{ roomId: number; roomCode: string } | null>(null);
+  const sessionRoomRef = useRef<string | null>(null);
   useEffect(() => {
     if (sessionData) {
-      sessionRoomRef.current = { roomId: sessionData.roomId, roomCode: sessionData.roomCode };
+      sessionRoomRef.current = sessionData.roomCode;
     } else {
       sessionRoomRef.current = null;
     }
@@ -100,19 +100,19 @@ export default function GamePageClient() {
   // the mount effect above already fetched). Messages broadcast during the
   // outage are lost (in-memory broker), so we re-pull to get the latest state.
   //
-  // Defensive re-join: we re-send /app/room/{roomId}/join before fetchSession.
+  // Defensive re-join: we re-send /app/room/{roomCode}/join before fetchSession.
   // With the Player.DISCONNECTED status removed (#21 cleanup), this is no
   // longer load-bearing — the player stays ACTIVE across a WS drop, so
   // /lotr/state won't 403. But the re-join is harmless (backend idempotently
   // reactivates an already-ACTIVE player) and keeps the flow robust against
-  // any future membership-state change. sessionData carries both roomId and
-  // roomCode (set by the initial fetchSession).
+  // any future membership-state change. sessionData carries roomCode
+  // (set by the initial fetchSession).
   //
   // IMPORTANT: this effect's deps are reconnectCount + identity inputs only.
   // sessionData must NOT be a dep — the effect calls fetchSession (which
   // setSessionData's), so depending on sessionData creates an infinite loop
   // (reconnect -> joinRoom -> broadcast -> fetchSession -> setSessionData ->
-  // effect re-fires -> joinRoom again -> ...). Read roomId/roomCode via ref.
+  // effect re-fires -> joinRoom again -> ...). Read roomCode via ref.
   const initialReconnectSeen = useRef(false);
   useEffect(() => {
     if (reconnectCount === 0) return;
@@ -122,7 +122,7 @@ export default function GamePageClient() {
     }
     const sessionRoom = sessionRoomRef.current;
     if (sessionRoom) {
-      webSocketService.joinRoom(sessionRoom.roomId, sessionRoom.roomCode, username);
+      webSocketService.joinRoom(sessionRoom, username);
     }
     fetchSession();
   }, [reconnectCount, fetchSession, username]);
@@ -182,7 +182,7 @@ export default function GamePageClient() {
     return (
       <LotrGameView
         sessionId={sessionId}
-        roomId={sessionData.roomId}
+        roomCode={sessionData.roomCode}
         username={username}
         onBackToRoom={() => router.push(`/room/${sessionData.roomCode}`)}
       />

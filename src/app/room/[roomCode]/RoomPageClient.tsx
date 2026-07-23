@@ -52,10 +52,8 @@ export default function RoomPageClient() {
   // without subscribing to `room` (which would re-trigger the effect every
   // time the roster updates — an infinite loop, since the effect itself calls
   // setRoom). Only reconnectCount should drive that effect's re-execution.
-  const roomIdRef = useRef<number | null>(null);
-  useEffect(() => {
-    roomIdRef.current = room?.id ?? null;
-  }, [room?.id]);
+  // roomCode is stable (parsed from the URL), so the reconnect effect can read
+  // it directly without a ref.
 
   const username = user?.username || "";
 
@@ -107,7 +105,6 @@ export default function RoomPageClient() {
           return;
         }
 
-        const roomId = roomData.id;
         // Holds every subscription created during this join attempt. The
         // join-response subscription is added immediately; room-scoped
         // subscriptions are added once join succeeds. All are registered with
@@ -117,7 +114,7 @@ export default function RoomPageClient() {
         // Subscribe to the join-response topic first, THEN send the join.
         // The backend's StompAuthInterceptor rejects room-scoped subscriptions
         // from non-members, so we must wait for join confirmation before
-        // subscribing to /topic/room/{roomId}/* topics.
+        // subscribing to /topic/room/{roomCode}/* topics.
         unsubscribes.push(
           webSocketService.subscribeToUserJoinResponse(
             username,
@@ -133,23 +130,23 @@ export default function RoomPageClient() {
               setHasJoined(true);
               setRoom(res.room || roomData);
               // Load persisted chat messages
-              setChatMessages(loadChatMessages(roomId));
+              setChatMessages(loadChatMessages(roomCode));
 
               // Now that membership is confirmed, subscribe to room topics.
               // @SubscribeMapping returns the current room roster immediately.
               unsubscribes.push(
-                webSocketService.subscribeToRoomPlayers(roomId, (updatedRoom) => {
+                webSocketService.subscribeToRoomPlayers(roomCode, (updatedRoom) => {
                   setRoom(updatedRoom);
                 }),
               );
               unsubscribes.push(
-                webSocketService.subscribeToRoomChat(roomId, (message) => {
+                webSocketService.subscribeToRoomChat(roomCode, (message) => {
                   setChatMessages((prev) => [...prev, message]);
-                  saveChatMessage(roomId, message);
+                  saveChatMessage(roomCode, message);
                 }),
               );
               unsubscribes.push(
-                webSocketService.subscribeToReadyStatus(roomId, (data) => {
+                webSocketService.subscribeToReadyStatus(roomCode, (data) => {
                   setRoom((prev) =>
                     prev
                       ? {
@@ -165,7 +162,7 @@ export default function RoomPageClient() {
                 }),
               );
               unsubscribes.push(
-                webSocketService.subscribeToGameEvents(roomId, (event) => {
+                webSocketService.subscribeToGameEvents(roomCode, (event) => {
                   handleGameEvent(event);
                 }),
               );
@@ -186,7 +183,7 @@ export default function RoomPageClient() {
         );
 
         // Send join with password
-        webSocketService.joinRoom(roomId, roomCode, username, roomPassword);
+        webSocketService.joinRoom(roomCode, username, roomPassword);
       } catch (error) {
         console.error("Failed to connect and join room:", error);
         setError("Failed to connect to room");
@@ -246,7 +243,8 @@ export default function RoomPageClient() {
   // IMPORTANT: this effect's deps are reconnectCount + identity inputs only.
   // `room` must NOT be a dep — the effect calls setRoom, so depending on room
   // creates an infinite loop (reconnect -> joinRoom -> broadcast -> setRoom ->
-  // effect re-fires -> joinRoom again -> ...). Read room.id via roomIdRef.
+  // effect re-fires -> joinRoom again -> ...). Read roomCode from the stable
+  // URL-derived const instead.
   const initialReconnectSeen = useRef(false);
   useEffect(() => {
     if (reconnectCount === 0) return;
@@ -255,12 +253,10 @@ export default function RoomPageClient() {
       return;
     }
     if (!hasJoined || intentionalLeave) return;
-    const roomId = roomIdRef.current;
-    if (roomId == null) return;
 
     // Re-join first: reactivate the player row, then the GET reflects the
     // honest roster (and downstream game-page fetches won't 403).
-    webSocketService.joinRoom(roomId, roomCode, username, password);
+    webSocketService.joinRoom(roomCode, username, password);
 
     apiFetch(`/api/rooms/code/${roomCode}`)
       .then((response) => {
@@ -278,7 +274,7 @@ export default function RoomPageClient() {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !room) return;
 
-    webSocketService.sendChatMessage(room.id, username, newMessage.trim());
+    webSocketService.sendChatMessage(room.roomCode, username, newMessage.trim());
     setNewMessage("");
   };
 
@@ -288,13 +284,13 @@ export default function RoomPageClient() {
     const currentPlayer = room.players.find((p) => p.username === username);
     const newReadyState = !currentPlayer?.isReady;
 
-    webSocketService.toggleReady(room.id, username, newReadyState);
+    webSocketService.toggleReady(room.roomCode, username, newReadyState);
   };
 
   const handleStartGame = () => {
     if (!room) return;
 
-    webSocketService.startGame(room.id, username);
+    webSocketService.startGame(room.roomCode, username);
   };
 
   const handleLeaveRoom = () => {
@@ -302,7 +298,7 @@ export default function RoomPageClient() {
       setIntentionalLeave(true);
       setHasJoined(false);
       joinInitiatedRef.current = false;
-      webSocketService.leaveRoom(room.id, username);
+      webSocketService.leaveRoom(room.roomCode, username);
     }
     router.push("/");
   };
@@ -316,17 +312,17 @@ export default function RoomPageClient() {
 
   const handleReturnToLobby = () => {
     if (!room) return;
-    webSocketService.returnToLobby(room.id, username);
+    webSocketService.returnToLobby(room.roomCode, username);
   };
 
   const handleKickPlayer = (targetUsername: string) => {
     if (!room) return;
-    webSocketService.kickPlayer(room.id, targetUsername);
+    webSocketService.kickPlayer(room.roomCode, targetUsername);
   };
 
   const handleMakeHost = (targetUsername: string) => {
     if (!room) return;
-    webSocketService.transferHost(room.id, targetUsername);
+    webSocketService.transferHost(room.roomCode, targetUsername);
   };
 
   const handleCopyCode = async () => {
@@ -348,7 +344,7 @@ export default function RoomPageClient() {
   const handleSaveSettings = () => {
     if (!room) return;
     if (settingsGameType !== room.gameType) {
-      webSocketService.switchGame(room.id, settingsGameType);
+      webSocketService.switchGame(room.roomCode, settingsGameType);
     }
     setShowSettings(false);
   };

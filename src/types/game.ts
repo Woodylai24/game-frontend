@@ -27,7 +27,6 @@ export interface Player {
 }
 
 export interface GameRoom {
-  id: number;
   roomName: string;
   roomCode: string;
   gameType: string;
@@ -84,7 +83,6 @@ export interface GameEvent {
  */
 export interface GameSessionData {
   id: string;
-  roomId: number;
   roomCode: string;
   gameType: string;
   gameStatus: "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "FINISHED" | "CANCELLED";

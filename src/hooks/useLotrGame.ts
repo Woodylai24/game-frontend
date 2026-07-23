@@ -6,7 +6,7 @@ import { webSocketService } from "@/services/websocket";
 import { useConnectionStatus } from "@/context/ConnectionContext";
 import { LotrStateResponse, LotrGameState } from "@/types/lotr";
 
-export function useLotrGame(sessionId: string, roomId: number, username: string) {
+export function useLotrGame(sessionId: string, roomCode: string, username: string) {
   const { reconnectCount } = useConnectionStatus();
   const [lotrState, setLotrState] = useState<LotrGameState | null>(null);
   const [gameStatus, setGameStatus] = useState<string>("IN_PROGRESS");
@@ -50,8 +50,8 @@ export function useLotrGame(sessionId: string, roomId: number, username: string)
   }, [reconnectCount, fetchState]);
 
   useEffect(() => {
-    if (!roomId) return;
-    const unsub = webSocketService.subscribeToGameEvents(roomId, (event) => {
+    if (!roomCode) return;
+    const unsub = webSocketService.subscribeToGameEvents(roomCode, (event) => {
       const e = event as unknown as Record<string, unknown>;
       if (e.parsedState) {
         setLotrState(e.parsedState as LotrGameState);
@@ -64,7 +64,7 @@ export function useLotrGame(sessionId: string, roomId: number, username: string)
       }
     });
     return unsub;
-  }, [roomId]);
+  }, [roomCode]);
 
   const takeCard = useCallback(async (cardSlotId: number, playOrDiscard: "PLAY" | "DISCARD", chosenRegion?: string) => {
     try {

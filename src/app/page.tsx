@@ -82,14 +82,14 @@ export default function Home() {
           }
         } else if (event.type === "ROOM_UPDATED" || event.type === "ROOM_STARTED") {
           setRooms((prev) =>
-            prev.map((r) => (r.id === event.room.id ? event.room : r)),
+            prev.map((r) => (r.roomCode === event.room.roomCode ? event.room : r)),
           );
           setMyRooms((prev) =>
-            prev.map((r) => (r.id === event.room.id ? event.room : r)),
+            prev.map((r) => (r.roomCode === event.room.roomCode ? event.room : r)),
           );
         } else if (event.type === "ROOM_DELETED") {
-          setRooms((prev) => prev.filter((r) => r.id !== event.room.id));
-          setMyRooms((prev) => prev.filter((r) => r.id !== event.room.id));
+          setRooms((prev) => prev.filter((r) => r.roomCode !== event.room.roomCode));
+          setMyRooms((prev) => prev.filter((r) => r.roomCode !== event.room.roomCode));
         }
       },
     );
@@ -270,7 +270,7 @@ export default function Home() {
               <AnimatePresence>
                 {myRooms.map((room, index) => (
                   <motion.div
-                    key={room.id}
+                    key={room.roomCode}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
@@ -346,7 +346,7 @@ export default function Home() {
               <AnimatePresence>
                 {rooms.map((room, index) => (
                   <motion.div
-                    key={room.id}
+                    key={room.roomCode}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}

@@ -124,7 +124,6 @@ export interface LotrLogEntry {
 
 export interface LotrStateResponse {
   sessionId: string;
-  roomId: number;
   gameStatus: string;
   parsedState: LotrGameState | null;
   players: { username: string; playerOrder: number; side: string }[];

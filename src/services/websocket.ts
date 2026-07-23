@@ -214,7 +214,6 @@ export class WebSocketService {
   }
 
   joinRoom(
-    roomId: number,
     roomCode: string,
     username: string,
     password?: string,
@@ -222,7 +221,7 @@ export class WebSocketService {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/join`,
+      destination: `/app/room/${roomCode}/join`,
       body: JSON.stringify({
         roomCode,
         password: password || "",
@@ -230,93 +229,93 @@ export class WebSocketService {
     });
   }
 
-  leaveRoom(roomId: number, username: string): void {
+  leaveRoom(roomCode: string, username: string): void {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/leave`,
+      destination: `/app/room/${roomCode}/leave`,
       body: JSON.stringify({}),
     });
   }
 
-  startGame(roomId: number, hostUsername: string): void {
+  startGame(roomCode: string, hostUsername: string): void {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/start`,
+      destination: `/app/room/${roomCode}/start`,
       body: JSON.stringify({}),
     });
   }
 
-  sendChatMessage(roomId: number, username: string, message: string): void {
+  sendChatMessage(roomCode: string, username: string, message: string): void {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/chat`,
+      destination: `/app/room/${roomCode}/chat`,
       body: JSON.stringify({ message }),
     });
   }
 
-  toggleReady(roomId: number, username: string, ready: boolean): void {
+  toggleReady(roomCode: string, username: string, ready: boolean): void {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/ready`,
+      destination: `/app/room/${roomCode}/ready`,
       body: JSON.stringify({ ready: ready.toString() }),
     });
   }
 
-  makeMove(roomId: number, username: string, row: number, col: number): void {
+  makeMove(roomCode: string, username: string, row: number, col: number): void {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/move`,
+      destination: `/app/room/${roomCode}/move`,
       body: JSON.stringify({ row, col }),
     });
   }
 
-  returnToLobby(roomId: number, username: string): void {
+  returnToLobby(roomCode: string, username: string): void {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/return-to-lobby`,
+      destination: `/app/room/${roomCode}/return-to-lobby`,
       body: JSON.stringify({}),
     });
   }
 
-  kickPlayer(roomId: number, targetUsername: string): void {
+  kickPlayer(roomCode: string, targetUsername: string): void {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/kick`,
+      destination: `/app/room/${roomCode}/kick`,
       body: JSON.stringify({ targetUsername }),
     });
   }
 
-  transferHost(roomId: number, targetUsername: string): void {
+  transferHost(roomCode: string, targetUsername: string): void {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/transfer-host`,
+      destination: `/app/room/${roomCode}/transfer-host`,
       body: JSON.stringify({ targetUsername }),
     });
   }
 
-  switchGame(roomId: number, gameType: string): void {
+  switchGame(roomCode: string, gameType: string): void {
     if (!this.connected) return;
 
     this.client!.publish({
-      destination: `/app/room/${roomId}/switch-game`,
+      destination: `/app/room/${roomCode}/switch-game`,
       body: JSON.stringify({ gameType }),
     });
   }
 
   subscribeToRoomPlayers(
-    roomId: number,
+    roomCode: string,
     callback: (room: GameRoom) => void,
   ): () => void {
     return this.registerSubscription(
-      `/topic/room/${roomId}/players`,
+      `/topic/room/${roomCode}/players`,
       (message: StompMessage) => {
         const room: GameRoom = JSON.parse(message.body);
         callback(room);
@@ -325,11 +324,11 @@ export class WebSocketService {
   }
 
   subscribeToRoomChat(
-    roomId: number,
+    roomCode: string,
     callback: (message: ChatMessage) => void,
   ): () => void {
     return this.registerSubscription(
-      `/topic/room/${roomId}/chat`,
+      `/topic/room/${roomCode}/chat`,
       (message: StompMessage) => {
         const chatMessage: ChatMessage = JSON.parse(message.body);
         callback(chatMessage);
@@ -338,11 +337,11 @@ export class WebSocketService {
   }
 
   subscribeToGameEvents(
-    roomId: number,
+    roomCode: string,
     callback: (event: GameWsEvent) => void,
   ): () => void {
     return this.registerSubscription(
-      `/topic/room/${roomId}/game`,
+      `/topic/room/${roomCode}/game`,
       (message: StompMessage) => {
         const event = JSON.parse(message.body);
         callback(event);
@@ -351,11 +350,11 @@ export class WebSocketService {
   }
 
   subscribeToReadyStatus(
-    roomId: number,
+    roomCode: string,
     callback: (data: { username: string; ready: boolean }) => void,
   ): () => void {
     return this.registerSubscription(
-      `/topic/room/${roomId}/ready`,
+      `/topic/room/${roomCode}/ready`,
       (message: StompMessage) => {
         const data = JSON.parse(message.body);
         callback(data);
