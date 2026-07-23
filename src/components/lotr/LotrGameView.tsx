@@ -9,7 +9,7 @@ import ChatBottomSheet from "./ChatBottomSheet";
 
 interface LotrGameViewProps {
   sessionId: string;
-  roomId: number;
+  roomCode: string;
   username: string;
   onBackToRoom: () => void;
 }
@@ -26,31 +26,31 @@ interface LotrGameViewProps {
  */
 export default function LotrGameView({
   sessionId,
-  roomId,
+  roomCode,
   username,
   onBackToRoom,
 }: LotrGameViewProps) {
   return (
     <LotrGameProvider
       sessionId={sessionId}
-      roomId={roomId}
+      roomCode={roomCode}
       username={username}
       onBackToRoom={onBackToRoom}
     >
-      <LotrGameScreen roomId={roomId} username={username} />
+      <LotrGameScreen roomCode={roomCode} username={username} />
     </LotrGameProvider>
   );
 }
 
 function LotrGameScreen({
-  roomId,
+  roomCode,
   username,
 }: {
-  roomId: number;
+  roomCode: string;
   username: string;
 }) {
   const { error, players } = useLotrGameContext();
-  const chat = useChat(roomId, username);
+  const chat = useChat(roomCode, username);
   const [showPlayerAid, setShowPlayerAid] = useState(false);
   const [showChat, setShowChat] = useState(false);
 

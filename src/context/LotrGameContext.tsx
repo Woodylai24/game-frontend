@@ -91,7 +91,7 @@ const LotrGameContext = createContext<LotrGameContextValue | null>(null);
 
 interface ProviderProps {
   sessionId: string;
-  roomId: number;
+  roomCode: string;
   username: string;
   onBackToRoom?: () => void;
   children: ReactNode;
@@ -99,12 +99,12 @@ interface ProviderProps {
 
 export function LotrGameProvider({
   sessionId,
-  roomId,
+  roomCode,
   username,
   onBackToRoom,
   children,
 }: ProviderProps) {
-  const lotr = useLotrGame(sessionId, roomId, username);
+  const lotr = useLotrGame(sessionId, roomCode, username);
 
   // useMemo is called unconditionally (before the loading gate) so the hook
   // call order is stable across renders. The memo body no-ops when state is

@@ -17,7 +17,7 @@ import { apiFetch } from "@/services/api";
  *
  * The session page still owns the initial REST fetch (`GET /api/game-sessions`)
  * and WS connect — those are session-level concerns shared by all games. This
- * hook takes the already-fetched session + roomId and handles everything from
+ * hook takes the already-fetched session + roomCode and handles everything from
  * there.
  *
  * Player→symbol mapping: TTT convention is playerOrder 0 = "X", 1 = "O". The
@@ -54,11 +54,11 @@ export function useTicTacToeGame(session: GameSessionData, username: string) {
   // (in the page) has already run by the time this hook mounts.
   useEffect(() => {
     const unsub = webSocketService.subscribeToGameEvents(
-      currentSession.roomId,
+      currentSession.roomCode,
       (event: GameWsEvent) => { handleGameEvent(event); },
     );
     return unsub;
-  }, [currentSession.roomId]);
+  }, [currentSession.roomCode]);
 
   const handleGameEvent = useCallback(
     (event: GameWsEvent) => {
@@ -94,9 +94,9 @@ export function useTicTacToeGame(session: GameSessionData, username: string) {
 
   const makeMove = useCallback(
     (row: number, col: number) => {
-      webSocketService.makeMove(currentSession.roomId, username, row, col);
+      webSocketService.makeMove(currentSession.roomCode, username, row, col);
     },
-    [currentSession.roomId, username],
+    [currentSession.roomCode, username],
   );
 
   const backToRoom = useCallback(() => {
