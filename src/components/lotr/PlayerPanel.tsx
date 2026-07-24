@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LotrPlayerState, LotrCardColor, LotrRace, LotrSkill, getCardImagePath, getRaceIconPath, getSkillIconPath, getLandmarkImagePath } from "@/types/lotr";
 import { getCardDef, getTokenDef, getLandmarkDef } from "@/lib/lotrCards";
 import { useLotrGameContext } from "@/context/LotrGameContext";
@@ -15,17 +15,50 @@ interface Props {
   isOpponent?: boolean;
 }
 
+/** Format ms remaining as m:ss, clamped at 0. */
+function formatClock(ms: number): string {
+  const clamped = Math.max(0, ms);
+  const totalSec = Math.floor(clamped / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 /**
  * Renders one player's panel. `player`/`isCurrentTurn`/`isOpponent` are genuine
  * per-instance parameters (rendered twice — once for me, once for opponent), so
  * they stay as props. The player's display name is looked up from context.
  */
 export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props) {
-  const { players, mySide } = useLotrGameContext();
+  const { players, mySide, playerTimeRemaining, turnStartedAt } = useLotrGameContext();
 
   const playerName = isOpponent
     ? players?.find(p => p.side !== mySide)?.username
     : players?.find(p => p.side === mySide)?.username;
+
+  // Per-player chess-clock countdown (timed games only). The active player's
+  // displayed remaining drains client-side: stored - (now - turnStartedAt).
+  // The inactive player shows the static stored value. Re-synced authoritatively
+  // by the server on every turn handoff (playerTimeRemaining/turnStartedAt in
+  // the WS payload), so the client only interpolates the active drain.
+  // NOTE: null AND undefined both mean "not timed" — the backend serializes an
+  // absent map as JSON null, and `null !== undefined` would otherwise render a
+  // stuck 0:00 clock on untimed games (bug #3).
+  const isTimed = playerTimeRemaining != null && Object.keys(playerTimeRemaining).length > 0;
+  const storedRemaining = playerName ? (playerTimeRemaining?.[playerName] ?? 0) : 0;
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!isTimed || !isCurrentTurn || turnStartedAt == null) return;
+    const id = setInterval(() => setTick((t) => t + 1), 250);
+    return () => clearInterval(id);
+  }, [isTimed, isCurrentTurn, turnStartedAt]);
+  // `tick` is read implicitly via the re-render; reference it to satisfy the
+  // linter and make the dependency on the interval explicit.
+  void tick;
+  const displayedRemaining = isCurrentTurn && turnStartedAt != null
+    ? storedRemaining - (Date.now() - turnStartedAt)
+    : storedRemaining;
+  const lowTime = displayedRemaining <= 60_000;
 
   const takenLandmarks = (player.takenLandmarkIds ?? [])
     .map(getLandmarkDef)
@@ -66,7 +99,23 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props
           {playerName && <OnlineDot username={playerName} />}
           <span>{playerName}{!isOpponent ? " (You)" : ""}</span>
         </div>
-        {isCurrentTurn && <div className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full font-bold whitespace-nowrap shrink-0">{isOpponent ? "THEIR TURN" : "YOUR TURN"}</div>}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isTimed && (
+            <div
+              className={`text-xs font-bold px-2 py-0.5 rounded-full tabular-nums whitespace-nowrap ${
+                isCurrentTurn
+                  ? lowTime
+                    ? "bg-red-600 text-white animate-pulse"
+                    : "bg-gray-700 text-gray-100"
+                  : "bg-gray-800 text-gray-400"
+              }`}
+              title="Remaining time"
+            >
+              {formatClock(displayedRemaining)}
+            </div>
+          )}
+          {isCurrentTurn && <div className="text-[10px] bg-yellow-500 text-black px-2 py-0.5 rounded-full font-bold whitespace-nowrap shrink-0">{isOpponent ? "THEIR TURN" : "YOUR TURN"}</div>}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 mb-3">

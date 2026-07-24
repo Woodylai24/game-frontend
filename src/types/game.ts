@@ -36,6 +36,11 @@ export interface GameRoom {
   players: Player[];
   activeGameSessionId: string | null;
   gameFinished?: boolean;
+  // Generic game settings (issue #48). startPlayerUsername null/"" = Random.
+  startPlayerUsername: string | null;
+  timerEnabled: boolean;
+  timerBaseMin: number;
+  timerBonusSec: number;
 }
 
 export interface CreateRoomRequest {
@@ -85,6 +90,11 @@ export interface GameSessionData {
   gameStatus: "NOT_STARTED" | "IN_PROGRESS" | "PAUSED" | "FINISHED" | "CANCELLED";
   gameState: string;
   winnerUsername: string | null;
+  // Snapshot of the room's settings at session creation (issue #48).
+  startPlayerUsername: string | null;
+  timerEnabled: boolean;
+  timerBaseMin: number;
+  timerBonusSec: number;
 }
 
 export interface GameStartedEvent {

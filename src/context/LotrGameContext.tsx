@@ -82,9 +82,18 @@ export interface LotrGameContextValue {
   isLandmarkMovement: boolean;
   winnerSide: LotrPlayerSide | undefined;
   isDraw: boolean;
+  // True when the game ended because a player's clock ran out (the winner is
+  // the opponent by timeout, NOT the board-state leader).
+  isTimeout: boolean;
 
   // Navigation
   onBackToRoom?: () => void;
+
+  // Timer runtime (present only for timed games). playerTimeRemaining is keyed
+  // by username; turnStartedAt is the epoch-ms mark of the current turn. The
+  // active player's displayed remaining = stored - (now - turnStartedAt).
+  playerTimeRemaining: Record<string, number> | undefined;
+  turnStartedAt: number | null | undefined;
 }
 
 const LotrGameContext = createContext<LotrGameContextValue | null>(null);
@@ -169,6 +178,8 @@ function buildContextValue(
     resolveLandmark,
     resolveAlliance,
     resolveAllianceEffect,
+    playerTimeRemaining,
+    turnStartedAt,
   } = lotr;
 
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
@@ -189,10 +200,22 @@ function buildContextValue(
   const isLandmarkMovement =
     isLandmarkPhase && state.landmarkSubPhase === "MOVEMENT";
 
-  // Winner determination — mirrors the original LotrGameBoard logic exactly.
+  // Winner determination. For a timeout, the winner is decided externally
+  // (the opponent of whoever ran out of time) and is recorded in the terminal
+  // GAME_END log entry by the backend — it must NOT be recomputed from the
+  // board state, which would rank by regions and pick the wrong winner (bug #5).
   let winnerSide: LotrPlayerSide | undefined;
   let isDraw = false;
-  if (isFinished && state.questTrack) {
+  let isTimeout = false;
+  if (isFinished) {
+    const endEntry = [...(state.gameLog ?? [])].reverse().find((e) => e.action === "GAME_END");
+    if (endEntry?.data?.reason === "TIMEOUT") {
+      isTimeout = true;
+      const w = endEntry.data.winner as string | undefined;
+      if (w === "FELLOWSHIP" || w === "SAURON") winnerSide = w;
+    }
+  }
+  if (isFinished && !isTimeout && state.questTrack) {
     if (state.questTrack.fellowshipPosition >= 14) {
       winnerSide = "FELLOWSHIP";
     } else if (state.questTrack.sauronPosition >= 14) {
@@ -255,7 +278,10 @@ function buildContextValue(
     isLandmarkMovement,
     winnerSide,
     isDraw,
+    isTimeout,
     onBackToRoom,
+    playerTimeRemaining,
+    turnStartedAt,
   };
 }
 
