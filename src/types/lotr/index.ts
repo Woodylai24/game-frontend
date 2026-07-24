@@ -127,6 +127,10 @@ export interface LotrStateResponse {
   gameStatus: string;
   parsedState: LotrGameState | null;
   players: { username: string; playerOrder: number; side: string }[];
+  // Timer runtime state (present when the room's timer is enabled). Re-keyed
+  // from userId to username by the backend.
+  playerTimeRemaining?: Record<string, number>;
+  turnStartedAt?: number | null;
 }
 
 export const SKILL_ABBR: Record<LotrSkill, string> = {

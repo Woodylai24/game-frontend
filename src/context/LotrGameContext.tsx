@@ -85,6 +85,12 @@ export interface LotrGameContextValue {
 
   // Navigation
   onBackToRoom?: () => void;
+
+  // Timer runtime (present only for timed games). playerTimeRemaining is keyed
+  // by username; turnStartedAt is the epoch-ms mark of the current turn. The
+  // active player's displayed remaining = stored - (now - turnStartedAt).
+  playerTimeRemaining: Record<string, number> | undefined;
+  turnStartedAt: number | null | undefined;
 }
 
 const LotrGameContext = createContext<LotrGameContextValue | null>(null);
@@ -169,6 +175,8 @@ function buildContextValue(
     resolveLandmark,
     resolveAlliance,
     resolveAllianceEffect,
+    playerTimeRemaining,
+    turnStartedAt,
   } = lotr;
 
   const me = mySide === "FELLOWSHIP" ? state.fellowship : state.sauron;
@@ -256,6 +264,8 @@ function buildContextValue(
     winnerSide,
     isDraw,
     onBackToRoom,
+    playerTimeRemaining,
+    turnStartedAt,
   };
 }
 

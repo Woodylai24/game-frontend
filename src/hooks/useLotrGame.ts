@@ -13,6 +13,10 @@ export function useLotrGame(sessionId: string, roomCode: string, username: strin
   const [players, setPlayers] = useState<LotrStateResponse["players"]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // Per-player timer runtime (only populated for timed games). Carried on the
+  // REST response and the WS game event, NOT inside parsedState.
+  const [playerTimeRemaining, setPlayerTimeRemaining] = useState<Record<string, number> | undefined>(undefined);
+  const [turnStartedAt, setTurnStartedAt] = useState<number | null | undefined>(undefined);
 
   const fetchState = useCallback(async () => {
     try {
@@ -25,6 +29,8 @@ export function useLotrGame(sessionId: string, roomCode: string, username: strin
       setLotrState(data.parsedState);
       setGameStatus(data.gameStatus);
       setPlayers(data.players);
+      setPlayerTimeRemaining(data.playerTimeRemaining);
+      setTurnStartedAt(data.turnStartedAt ?? null);
     } catch {
       setError("Failed to load LOTR game state");
     } finally {
@@ -58,6 +64,14 @@ export function useLotrGame(sessionId: string, roomCode: string, username: strin
       }
       if (e.gameStatus) {
         setGameStatus(e.gameStatus as string);
+      }
+      // Timer runtime state arrives top-level on the game event (the backend
+      // re-keys remaining time to usernames + sends turnStartedAt).
+      if ("playerTimeRemaining" in e) {
+        setPlayerTimeRemaining(e.playerTimeRemaining as Record<string, number> | undefined);
+      }
+      if ("turnStartedAt" in e) {
+        setTurnStartedAt((e.turnStartedAt as number | null) ?? null);
       }
       if (e.event === "game_ended") {
         setGameStatus("FINISHED");
@@ -292,5 +306,5 @@ export function useLotrGame(sessionId: string, roomCode: string, username: strin
     }
   }, [sessionId]);
 
-  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, isLandmarkPhase, isAlliancePhase, isAllianceEffectPhase, isPickDiscardPhase, isRemoveFortressPhase, isPlaceUnitPhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, resolvePickDiscard, resolveRemoveFortress, resolvePlaceUnit, resolveLandmark, resolveAlliance, resolveAllianceEffect, setError };
+  return { lotrState, gameStatus, players, loading, error, isMyTurn, mySide, isManeuverPhase, isBonusPhase, isLandmarkPhase, isAlliancePhase, isAllianceEffectPhase, isPickDiscardPhase, isRemoveFortressPhase, isPlaceUnitPhase, takeCard, takeLandmark, resolveManeuver, resolveBonus, resolvePickDiscard, resolveRemoveFortress, resolvePlaceUnit, resolveLandmark, resolveAlliance, resolveAllianceEffect, setError, playerTimeRemaining, turnStartedAt };
 }
