@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { isSoundEnabled, setSoundEnabled } from "@/lib/soundNotifications";
 
 export default function SettingsPage() {
   const { user, loading, isAuthenticated, isGuest, updateUsername, logout } =
@@ -13,6 +14,13 @@ export default function SettingsPage() {
   const [newUsername, setNewUsername] = useState("");
   const [usernameError, setUsernameError] = useState("");
   const [usernameSaving, setUsernameSaving] = useState(false);
+  // Per-device preference (localStorage); default on. Read lazily on first
+  // render to avoid a localStorage hit during SSR/static export.
+  const [soundEnabled, setSoundEnabledState] = useState(true);
+
+  useEffect(() => {
+    setSoundEnabledState(isSoundEnabled());
+  }, []);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -167,6 +175,40 @@ export default function SettingsPage() {
               Auth Provider
             </label>
             <div className="mt-1">{authProviderBadge()}</div>
+          </div>
+
+          <div className="p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">
+                  Notification Sound
+                </label>
+                <p className="text-sm text-gray-500">
+                  Plays a sound when it becomes your turn. Saved on this device
+                  only.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={soundEnabled}
+                aria-label="Toggle notification sound"
+                onClick={() => {
+                  const next = !soundEnabled;
+                  setSoundEnabled(next);
+                  setSoundEnabledState(next);
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  soundEnabled ? "bg-blue-500" : "bg-gray-700"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    soundEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </div>
 
