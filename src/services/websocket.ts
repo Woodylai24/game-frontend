@@ -310,6 +310,23 @@ export class WebSocketService {
     });
   }
 
+  updateSettings(
+    roomCode: string,
+    settings: {
+      startPlayerUsername: string;
+      timerEnabled: boolean;
+      timerBaseMin: number;
+      timerBonusSec: number;
+    },
+  ): void {
+    if (!this.connected) return;
+
+    this.client!.publish({
+      destination: `/app/room/${roomCode}/update-settings`,
+      body: JSON.stringify(settings),
+    });
+  }
+
   subscribeToRoomPlayers(
     roomCode: string,
     callback: (room: GameRoom) => void,
