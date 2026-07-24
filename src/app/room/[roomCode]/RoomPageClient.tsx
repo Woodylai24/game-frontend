@@ -47,6 +47,13 @@ export default function RoomPageClient() {
   const [showSettings, setShowSettings] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [settingsGameType, setSettingsGameType] = useState("");
+  // Working copies of the generic game settings (issue #48). Edited in the
+  // settings modal; sent to the backend on Save. settingsStartPlayer is the
+  // username of the chosen starter, or "" for Random.
+  const [settingsStartPlayer, setSettingsStartPlayer] = useState("");
+  const [settingsTimerEnabled, setSettingsTimerEnabled] = useState(false);
+  const [settingsTimerBaseMin, setSettingsTimerBaseMin] = useState(10);
+  const [settingsTimerBonusSec, setSettingsTimerBonusSec] = useState(30);
 
   // Latest room id, kept in a ref so the reconnect effect below can read it
   // without subscribing to `room` (which would re-trigger the effect every
@@ -338,6 +345,10 @@ export default function RoomPageClient() {
 
   const handleOpenSettings = () => {
     setSettingsGameType(room?.gameType ?? "LOTR");
+    setSettingsStartPlayer(room?.startPlayerUsername ?? "");
+    setSettingsTimerEnabled(room?.timerEnabled ?? false);
+    setSettingsTimerBaseMin(room?.timerBaseMin ?? 10);
+    setSettingsTimerBonusSec(room?.timerBonusSec ?? 30);
     setShowSettings(true);
   };
 
@@ -345,6 +356,21 @@ export default function RoomPageClient() {
     if (!room) return;
     if (settingsGameType !== room.gameType) {
       webSocketService.switchGame(room.roomCode, settingsGameType);
+    }
+    // Send the settings update if any field differs from the room's current
+    // values. switchGame above re-ready checks are unaffected; settings are
+    // orthogonal and don't reset readiness.
+    const startChanged = (settingsStartPlayer || "") !== (room.startPlayerUsername ?? "");
+    const timerChanged = settingsTimerEnabled !== room.timerEnabled
+      || settingsTimerBaseMin !== room.timerBaseMin
+      || settingsTimerBonusSec !== room.timerBonusSec;
+    if (startChanged || timerChanged) {
+      webSocketService.updateSettings(room.roomCode, {
+        startPlayerUsername: settingsStartPlayer,
+        timerEnabled: settingsTimerEnabled,
+        timerBaseMin: settingsTimerBaseMin,
+        timerBonusSec: settingsTimerBonusSec,
+      });
     }
     setShowSettings(false);
   };
@@ -812,6 +838,103 @@ export default function RoomPageClient() {
               )}
               <option value="LOTR">The Lord of the Rings: Duel for Middle-earth</option>
             </select>
+
+            {/* Start player (generic) — Random or a named player. */}
+            <label className="block text-sm font-medium text-gray-200 mb-1 mt-4">
+              Start Player
+            </label>
+            <select
+              value={settingsStartPlayer}
+              onChange={(e) => setSettingsStartPlayer(e.target.value)}
+              disabled={!isHost || room.status !== "WAITING"}
+              className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed"
+            >
+              <option value="">Random</option>
+              {room.players
+                .filter((p) => p.status === "ACTIVE")
+                .map((p) => (
+                  <option key={p.username} value={p.username}>
+                    {p.username}
+                  </option>
+                ))}
+            </select>
+            {settingsGameType === "LOTR" && (
+              <p className="text-xs text-gray-500 mt-1">
+                The start player takes the Sauron side (Sauron always goes first).
+              </p>
+            )}
+
+            {/* Per-player chess-clock timer (generic). */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-200">
+                  Timer
+                </label>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={settingsTimerEnabled}
+                  aria-label="Toggle timer"
+                  onClick={() => setSettingsTimerEnabled((v) => !v)}
+                  disabled={!isHost || room.status !== "WAITING"}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed ${
+                    settingsTimerEnabled ? "bg-blue-500" : "bg-gray-700"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      settingsTimerEnabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+              {settingsTimerEnabled ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  Each player gets a chess clock; running out ends the game.
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-1">
+                  Off — the game shows an elapsed-time counter instead.
+                </p>
+              )}
+              {settingsTimerEnabled && (
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1">
+                      Base time (min)
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={180}
+                      value={settingsTimerBaseMin}
+                      onChange={(e) =>
+                        setSettingsTimerBaseMin(Math.max(1, Math.min(180, Number(e.target.value) || 10)))
+                      }
+                      disabled={!isHost || room.status !== "WAITING"}
+                      className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-400 mb-1">
+                      Bonus time (sec)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={settingsTimerBonusSec}
+                      onChange={(e) =>
+                        setSettingsTimerBonusSec(Math.max(0, Math.min(120, Number(e.target.value) || 30)))
+                      }
+                      disabled={!isHost || room.status !== "WAITING"}
+                      className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {!isHost && (
               <p className="text-xs text-gray-500 mt-2">
                 Only the host can change settings.
