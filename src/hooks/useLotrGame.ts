@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { apiFetch } from "@/services/api";
 import { webSocketService } from "@/services/websocket";
 import { useConnectionStatus } from "@/context/ConnectionContext";
+import { isSoundEnabled, playTurnNotification } from "@/lib/soundNotifications";
 import { LotrStateResponse, LotrGameState } from "@/types/lotr";
 
 export function useLotrGame(sessionId: string, roomCode: string, username: string) {
@@ -116,6 +117,20 @@ export function useLotrGame(sessionId: string, roomCode: string, username: strin
   const isPickDiscardPhase = lotrState?.pickDiscardPhase === true && lotrState?.pickDiscardPhasePlayer === mySide;
   const isRemoveFortressPhase = lotrState?.removeFortressPhase === true && lotrState?.removeFortressPhasePlayer === mySide;
   const isPlaceUnitPhase = lotrState?.placeUnitPhase === true && lotrState?.placeUnitPhasePlayer === mySide;
+
+  // Play the turn-notification sound only on a real false→true handoff (the
+  // opponent's move ended and it is now my turn). The ref starts undefined so
+  // the very first observation — initial load, reconnect-while-my-turn, or the
+  // start player's first turn — never triggers a sound (per issue #49).
+  const prevIsMyTurnRef = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevIsMyTurnRef.current;
+    prevIsMyTurnRef.current = isMyTurn;
+    if (prev === undefined) return;
+    if (!prev && isMyTurn && isSoundEnabled()) {
+      playTurnNotification();
+    }
+  }, [isMyTurn]);
 
   const resolveManeuver = useCallback(async (maneuverType: string, targetRegion?: string, fromRegion?: string, toRegion?: string) => {
     try {
