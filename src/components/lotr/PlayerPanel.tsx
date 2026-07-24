@@ -41,7 +41,10 @@ export default function PlayerPanel({ player, isCurrentTurn, isOpponent }: Props
   // The inactive player shows the static stored value. Re-synced authoritatively
   // by the server on every turn handoff (playerTimeRemaining/turnStartedAt in
   // the WS payload), so the client only interpolates the active drain.
-  const isTimed = playerTimeRemaining !== undefined;
+  // NOTE: null AND undefined both mean "not timed" — the backend serializes an
+  // absent map as JSON null, and `null !== undefined` would otherwise render a
+  // stuck 0:00 clock on untimed games (bug #3).
+  const isTimed = playerTimeRemaining != null && Object.keys(playerTimeRemaining).length > 0;
   const storedRemaining = playerName ? (playerTimeRemaining?.[playerName] ?? 0) : 0;
   const [tick, setTick] = useState(0);
   useEffect(() => {

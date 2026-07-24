@@ -908,9 +908,16 @@ export default function RoomPageClient() {
                       min={1}
                       max={180}
                       value={settingsTimerBaseMin}
-                      onChange={(e) =>
-                        setSettingsTimerBaseMin(Math.max(1, Math.min(180, Number(e.target.value) || 10)))
-                      }
+                      onChange={(e) => {
+                        // Allow 0/empty while typing; only fall back to the
+                        // default when the field is genuinely empty/invalid.
+                        // (Number("") is 0, but "" should keep the field clear
+                        // for editing — clamp to bounds on each change.)
+                        const raw = e.target.value;
+                        const parsed = raw === "" ? 10 : Number(raw);
+                        const n = Number.isNaN(parsed) ? 10 : parsed;
+                        setSettingsTimerBaseMin(Math.max(1, Math.min(180, n)));
+                      }}
                       disabled={!isHost || room.status !== "WAITING"}
                       className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed"
                     />
@@ -924,9 +931,15 @@ export default function RoomPageClient() {
                       min={0}
                       max={120}
                       value={settingsTimerBonusSec}
-                      onChange={(e) =>
-                        setSettingsTimerBonusSec(Math.max(0, Math.min(120, Number(e.target.value) || 30)))
-                      }
+                      onChange={(e) => {
+                        // Bonus time may legitimately be 0 (no bonus). The old
+                        // `Number(x) || 30` coerced 0 -> 30 (0 is falsy), so it
+                        // was impossible to set 0. Parse explicitly so 0 sticks.
+                        const raw = e.target.value;
+                        const parsed = raw === "" ? 30 : Number(raw);
+                        const n = Number.isNaN(parsed) ? 30 : parsed;
+                        setSettingsTimerBonusSec(Math.max(0, Math.min(120, n)));
+                      }}
                       disabled={!isHost || room.status !== "WAITING"}
                       className="w-full px-3 py-2 border border-gray-700 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed"
                     />

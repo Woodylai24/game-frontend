@@ -13,7 +13,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function InfoBar() {
-  const { state, isMyTurn, isFinished, isDraw, winnerSide, mySide, players, onBackToRoom, playerTimeRemaining } = useLotrGameContext();
+  const { state, isMyTurn, isFinished, isDraw, isTimeout, winnerSide, mySide, players, onBackToRoom, playerTimeRemaining } = useLotrGameContext();
   const currentChapter = state.currentChapter;
   const currentTurnPlayer = state.currentTurnPlayer;
 
@@ -25,7 +25,10 @@ export default function InfoBar() {
   // the client mount time — it is a local "elapsed this session" convenience,
   // not authoritative (restarts from 0 on refresh). Timed games show per-player
   // countdowns in PlayerPanel instead, so nothing is shown here.
-  const isTimed = playerTimeRemaining !== undefined;
+  // NOTE: treat null AND undefined as "not timed" — the backend serializes an
+  // absent playerTimeRemaining as JSON null, and `null !== undefined` would
+  // otherwise wrongly suppress the count-up (bug #3).
+  const isTimed = playerTimeRemaining != null && Object.keys(playerTimeRemaining).length > 0;
   const mountRef = useRef(Date.now());
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -43,6 +46,18 @@ export default function InfoBar() {
           <div className="text-sm font-bold">
             {isDraw ? (
               <span className="text-yellow-400">Game Over — Draw!</span>
+            ) : isTimeout ? (
+              // Timeout: the player who ran out of time loses; the opponent
+              // wins regardless of the board state. Show that explicitly.
+              winnerSide === mySide ? (
+                <span className="text-green-400">
+                  Victory on time — {winnerSide ? playerName(winnerSide === "FELLOWSHIP" ? "SAURON" : "FELLOWSHIP") : "opponent"} ran out of time
+                </span>
+              ) : (
+                <span className="text-red-400">
+                  Out of time — {winnerSide ? playerName(winnerSide) : "?"} wins
+                </span>
+              )
             ) : winnerSide === mySide ? (
               <span className="text-green-400">Victory!</span>
             ) : (

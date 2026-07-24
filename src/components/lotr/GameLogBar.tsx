@@ -118,6 +118,21 @@ export default function GameLogBar() {
       const winnerCls = winner ? sideColor(winner) : "";
 
       switch (data.reason) {
+        case "TIMEOUT": {
+          // Winner is the side that did NOT run out of time. The loser (other
+          // side) is ranked last regardless of board state.
+          const loserSide = winner === "FELLOWSHIP" ? "SAURON" : "FELLOWSHIP";
+          const loserName = loserSide ? playerName(loserSide) : null;
+          const loserCls = loserSide ? sideColor(loserSide) : "";
+          return (
+            <>
+              <span className={`${loserCls} font-semibold`}>{loserName}</span>
+              <span className="text-gray-300"> ran out of time — </span>
+              <span className={`${winnerCls} font-semibold`}>{winnerName}</span>
+              <span className="text-gray-300"> wins on time</span>
+            </>
+          );
+        }
         case "QUEST_RING":
           return (
             <>
